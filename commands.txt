@@ -1,0 +1,21 @@
+Run commands in this order:
+
+vi ~/.bashrc
+
+add 
+
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+
+export KAFKA_HOME=~/kafka_2.13-3.4.0
+
+save using :wq
+
+and then restart using 
+
+source ~/.bashrc
+
+# Start the ZooKeeper service
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+# Start the Kafka broker service
+bin/kafka-server-start.sh config/server.properties
