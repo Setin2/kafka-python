@@ -13,6 +13,7 @@ AVAILABLE_GPU = 100 # %
 # Create customer(s) for monitoring the resource consumption
 
 producer = producer.Producer()
+producer.send("50", "RAM")
 producer.send("100", "RAM")
 
 consumer = consumer.Consumer("my-topic", "my-group")
