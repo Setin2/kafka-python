@@ -1,5 +1,6 @@
 import consumer
 import producer
+from kafka import KafkaConsumer
 
 # Resources available to the system
 MAX_RAM = 8000 # in MB
@@ -11,6 +12,8 @@ AVAILABLE_CPU = 100 # %
 AVAILABLE_GPU = 100 # %
 
 # Create customer(s) for monitoring the resource consumption
+
+print("START")
 
 producer = producer.Producer()
 producer.send("50", "RAM")
