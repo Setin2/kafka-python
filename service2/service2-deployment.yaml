@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service2
+  template:
+    metadata:
+      labels:
+        app: service2
+    spec:
+      containers:
+      - name: service2
+        image: service2:latest
+        command: ["python", "/app/service2.py"]
+        envFrom:
+        - configMapRef:
+            name: service2-config
+      - name: resource-monitor
+        image: resource-monitor:latest
+        command: ["python", "/app/resource-monitor/resource_monitor.py", "service2"]
+        envFrom:
+        - configMapRef:
+            name: service2-config

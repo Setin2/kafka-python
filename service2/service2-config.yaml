@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service2-config
+data:
+  KAFKA_TOPIC: service2-topic
+  KAFKA_BOOTSTRAP_SERVERS: kafka-broker-0:9092,kafka-broker-1:9092,kafka-broker-2:9092

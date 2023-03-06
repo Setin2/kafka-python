@@ -1,3 +1,6 @@
-import cv2
+x = 0
 
-image = cv2.imread("./test_image.jpg")
+for i in range(100000):
+    x += i
+
+print(x)
