@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: service1
-        image: setin/service1/service1:latest
+        image: setin/service1:latest
         command: ["python", "/app/service1.py"]
         envFrom:
         - configMapRef:
