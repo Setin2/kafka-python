@@ -15,6 +15,7 @@ spec:
       containers:
       - name: service1
         image: setin/service1:latest
+        imagePullPolicy: Never
         command: ["python", "/app/service1.py"]
         envFrom:
         - configMapRef:
