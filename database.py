@@ -37,13 +37,26 @@ class Database():
         rows = self.cursor.fetchall()
         return rows
 
-    # returns all the rows where the timestamp is between utcnow - time & utcnow + time
-    # where time is the time in minutes
+    # returns all the rows where the data was stored between the current time, and timedelta(hours=hour, minutes=minutes) in the future
     def get_data_from_date(self, hour, minutes):
         ts = datetime.datetime.utcnow().replace(microsecond=0)
-        ts_minus = ts - timedelta(hours=hour, minutes=minutes)
         ts_plus = ts + timedelta(hours=hour, minutes=minutes)
-        self.cursor.execute("SELECT * FROM metrics WHERE timestamp <= %s AND timestamp >= %s", (ts_plus, ts_minus))
+        self.cursor.execute("SELECT * FROM metrics WHERE timestamp >= %s AND timestamp <= %s", (ts, ts_plus))
+        rows = self.cursor.fetchall()
+        return rows
+
+    def get_data_by_service_group(self, list_of_services, timespan=1):
+        ts = datetime.datetime.utcnow().replace(microsecond=0)
+        ts_minus = ts - timedelta(hours=timespan, minutes=0)
+        ts_plus = ts + timedelta(hours=timespan, minutes=0)
+        self.cursor.execute(
+            "SELECT service, resource, value, timestamp "
+            "FROM metrics "
+            "WHERE timestamp >= %s AND timestamp <= %s AND service IN %s "
+            "AND (SELECT COUNT(DISTINCT service) FROM metrics WHERE timestamp >= %s AND timestamp <= %s AND service IN %s) = %s;",
+            (ts_minus, ts_plus, list_of_services, ts_minus, ts_plus, list_of_services, len(list_of_services))
+        )
+
         rows = self.cursor.fetchall()
         return rows
 
