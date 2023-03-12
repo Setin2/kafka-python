@@ -1,6 +1,7 @@
 import psycopg2.pool
 import psycopg2
 import datetime
+from datetime import timedelta
 
 class Database():
     def __init__(self):
@@ -36,10 +37,20 @@ class Database():
         rows = self.cursor.fetchall()
         return rows
 
+    # returns all the rows where the timestamp is between utcnow - time & utcnow + time
+    # where time is the time in minutes
+    def get_data_from_date(self, hour, minutes):
+        ts = datetime.datetime.utcnow().replace(microsecond=0)
+        ts_minus = ts - timedelta(hours=hour, minutes=minutes)
+        ts_plus = ts + timedelta(hours=hour, minutes=minutes)
+        self.cursor.execute("SELECT * FROM metrics WHERE timestamp <= %s AND timestamp >= %s", (ts_plus, ts_minus))
+        rows = self.cursor.fetchall()
+        return rows
+
     def get_historical_data(self, table):
         self.cursor.execute("SELECT service, resource, value, timestamp FROM {table}".format(table=table))
-        data = self.cursor.fetchall()
-        return data
+        rows = self.cursor.fetchall()
+        return rows
     
     def close_connection(self):
         self.cursor.close()

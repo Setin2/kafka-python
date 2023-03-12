@@ -68,4 +68,4 @@ if __name__ == '__main__':
         producer.send("resources", service + " DISK", str(disk_usage))
 
         # Wait for 5 seconds before collecting and sending next data point
-        time.sleep(1)
+        time.sleep(5)
