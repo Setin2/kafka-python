@@ -1,26 +1,13 @@
-import psycopg2
+import database
 
-# Connect to the database
-conn = psycopg2.connect(
-    host="localhost",
-    port="5432",
-    database="postgres",
-    user="postgres",
-    password="postgres"
-)
+def main():
+    data_base = database.Database()
+    rows = data_base.get_data("service1", "CPU")
 
-# Open a cursor to perform database operations
-cursor = conn.cursor()
+    for row in rows:
+        print(row)
+    
+    data_base.close_connection()
 
-# Execute a SELECT statement to retrieve data from a table
-#cursor.execute('SELECT * FROM metrics')
-cursor.execute("SELECT * FROM metrics WHERE resource = 'CPU'")
-
-# Fetch all rows and print the results
-rows = cursor.fetchall()
-for row in rows:
-    print(row)
-
-# Close the cursor and database connection
-cursor.close()
-conn.close()
+if __name__ == '__main__':
+    main()

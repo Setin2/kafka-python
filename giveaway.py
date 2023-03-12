@@ -42,6 +42,5 @@ def main():
     else:
         print('No followers found')
 
-
 if __name__ == '__main__':
     main()
