@@ -58,7 +58,7 @@ conn = psycopg2.connect(
 cursor = conn.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS metrics (service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
 consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
-#plot = Plot()
+plot = Plot()
 
 # Insert data into the table
 def insert_metric(service, resource, value):
@@ -71,9 +71,7 @@ for message in consumer:
     value = message.value.decode("utf-8")
 
     insert_metric(service, resource, value)
-    print("wrote")
-
-    #plot.update(resource, float(value))
+    plot.update(resource, float(value))
     #save_to_file(resource, value)
 
     # consume earliest available messages, don't commit offsets
