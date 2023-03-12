@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, draw, show, ion
 from kafka import KafkaConsumer
+import psycopg2
+import datetime
 
 class Plot():
     def __init__(self):
@@ -43,17 +45,41 @@ def save_to_file(filename, data):
     with open('data/{fname}'.format(fname = filename), 'a') as f:
         f.write(data + "\n")
 
+
+# Connect to the database
+conn = psycopg2.connect(
+    host="localhost",
+    port="5432",
+    database="postgres",
+    user="postgres",
+    password="postgres"
+)
+# Create a table to store the data
+cursor = conn.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS metrics (service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
 consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
-plot = Plot()
+#plot = Plot()
+
+# Insert data into the table
+def insert_metric(service, resource, value):
+    ts = datetime.datetime.utcnow().replace(microsecond=0)
+    cursor.execute("INSERT INTO metrics (service, resource, value, timestamp) VALUES (%s, %s, %s, %s)", (service, resource, value, ts))
+    conn.commit()
 
 for message in consumer:
-    key = message.key.decode("utf-8")
+    service, resource = message.key.decode("utf-8").split(" ")
     value = message.value.decode("utf-8")
-    
-    plot.update(key, float(value))
-    save_to_file(key, value)
+
+    insert_metric(service, resource, value)
+    print("wrote")
+
+    #plot.update(resource, float(value))
+    #save_to_file(resource, value)
 
     # consume earliest available messages, don't commit offsets
     KafkaConsumer(auto_offset_reset='earliest', enable_auto_commit=False)
     # StopIteration if no message after 1sec
     KafkaConsumer(consumer_timeout_ms=1000)
+
+cursor.close()
+conn.close()
