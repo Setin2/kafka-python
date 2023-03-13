@@ -10,9 +10,9 @@ def get_expected_resource_usage(grouped):
         data_df = pd.DataFrame({'datetime': values['datetime'], 'value': values['value']})
         data_df = data_df.set_index('datetime')
 
+        min_expected_usage = min(data_df['value'])
         sum_expected_usage = sum(data_df['value']) / len(data_df)
         max_expected_usage = max(data_df['value'])
-        min_expected_usage = min(data_df['value'])
 
         #print(f"Minimum expected usage for {group} is: {min_expected_usage}")
         #print(f"Average expected usage for {group} is: {sum_expected_usage}")
@@ -39,10 +39,7 @@ def main():
     df = pd.DataFrame(data, columns=['image_ID', 'service', 'resource', 'value', 'datetime'])
     df['datetime'] = pd.to_datetime(df['datetime'])
 
-    if choice == 0 or choice == 1:
-        grouped = df.groupby(['service', 'resource'])
-    else: grouped = df.groupby(['image_ID', 'service', 'resource'])
-
+    grouped = df.groupby(['service', 'resource'])
     get_expected_resource_usage(grouped)
 
 if __name__ == '__main__':

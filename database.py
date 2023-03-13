@@ -4,6 +4,9 @@ import datetime
 from datetime import timedelta
 
 class Database():
+    """
+        The postgreSQL server is run in docker
+    """
     def __init__(self):
         pool = psycopg2.pool.SimpleConnectionPool(
             host="localhost",
@@ -20,6 +23,10 @@ class Database():
         self.cursor.execute("CREATE TABLE IF NOT EXISTS metrics (image_ID varchar(255), service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS predicted_metrics (image_ID varchar(255), service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
 
+    """
+        Insert a row in the given table
+        The timestamp is the time of insertion by default, but it can be changed to be sent by the kafka producer
+    """
     def insert_metric(self, table, image_ID, service, resource, value, ts=None):
         if ts is None:
             ts = datetime.datetime.utcnow().replace(microsecond=0)
@@ -27,18 +34,27 @@ class Database():
                             .format(table=table), (image_ID, service, resource, value, ts))
         self.connection.commit()
     
+    """
+        Drop the specified table
+    """
     def drop_table(self, table):
         self.cursor.execute("DROP TABLE {table};".format(table=table))
         self.connection.commit()
         print(f"Dropped table {table}")
 
+    """
+        Return all rows in the given table, for the specified service-resource pair
+    """
     def get_data(self, table, service, resource):
         self.cursor.execute("SELECT * FROM {table} WHERE resource = '{resource}' AND service = '{service}'"
                             .format(table=table, resource=resource, service=service))
         rows = self.cursor.fetchall()
         return rows
 
-    # returns all the rows where the data was stored between the current time, and timedelta(hours=hour, minutes=minutes) in the future
+    """
+        Returns all the rows where the data was stored between the current hour, and timedelta(hours=hour, minutes=minutes) in the future
+        Not sure if we will need to inspect data based on time of day, but here it is if needed
+    """
     def get_data_for_next_x_hours(self, hour, minutes):
         ts = datetime.datetime.utcnow().replace(microsecond=0)
         ts_plus = ts + timedelta(hours=hour, minutes=minutes)
@@ -50,27 +66,9 @@ class Database():
 
     """
         A task (group of services) will be applied to an image
-        Given a list of services, return the rows where all the services in the list have been applied to the same single image
-        The rows are groupd by images
+        Given a list of services, return the rows where the exact services in the list have been applied to the same single image
+        The rows are grouped by images
     """
-    """def get_data_by_service_group(self, list_of_services):
-        self.cursor.execute(
-            "SELECT t1.image_ID, t1.service, t1.resource, t1.value, t1.timestamp "
-            "FROM metrics t1 "
-            "WHERE t1.service IN %s "
-            "AND NOT EXISTS ( "
-            "SELECT t2.service "
-            "FROM metrics t2 "
-            "WHERE t2.image_ID = t1.image_ID "
-            "AND t2.service NOT IN %s "
-            ") "
-            "GROUP BY t1.image_ID, t1.service, t1.resource, t1.value, t1.timestamp "
-            "HAVING COUNT(DISTINCT t1.service) = 1; ",
-            (list_of_services, list_of_services)
-        )
-        rows = self.cursor.fetchall()
-        return rows"""
-
     def get_data_by_service_group(self, list_of_services):
         self.cursor.execute(
             "SELECT m1.image_ID, m1.service, m1.resource, m1.value, m1.timestamp "
@@ -94,11 +92,17 @@ class Database():
         rows = self.cursor.fetchall()
         return rows
 
+    """
+        Return all the rows in a given table
+    """
     def get_historical_data(self, table):
         self.cursor.execute("SELECT * FROM {table}".format(table=table))
         rows = self.cursor.fetchall()
         return rows
     
+    """
+        Connection to the server needs to be close
+    """
     def close_connection(self):
         self.cursor.close()
         self.connection.close()
