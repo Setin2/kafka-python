@@ -40,14 +40,9 @@ for name, group in grouped:
     # Fit a linear regression model to the resampled data and predict the future resource usage
     X = pd.DataFrame({'timestamp': (forecast_df['datetime'] - datetime(1970,1,1)).dt.total_seconds()})
     y = forecast_df['value']
-    #model = LinearRegression().fit(X, y)
+    model = LinearRegression().fit(X, y)
 
-    kernel = RBF(length_scale=1.0)
-    model = GaussianProcessRegressor(kernel=kernel, alpha=0.1).fit(X, y)
-
-    X_test = np.linspace(X.min(), X.max(), num=100).reshape(-1, 1)
-    next_12_hours['predicted_value'], std_dev = model.predict(X_test, return_std=True)
-    #next_12_hours['predicted_value'] = model.predict(pd.DataFrame({'timestamp': (next_12_hours['datetime'] - datetime(1970,1,1)).dt.total_seconds()}))
+    next_12_hours['predicted_value'] = model.predict(pd.DataFrame({'timestamp': (next_12_hours['datetime'] - datetime(1970,1,1)).dt.total_seconds()}))
     
     # Add the predicted resource usage data to the predicted_df DataFrame
     next_12_hours['service'] = name[0]
