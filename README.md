@@ -15,7 +15,7 @@ To start a consumer, run the command ``` python monitor.py ```. The consumer wil
 
 ## Database
 
-The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database.
+The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. The database tables have the following format: ``` (image_ID, service, resource, value, timestamp) ```
 
 ### Expected resource usage
 
