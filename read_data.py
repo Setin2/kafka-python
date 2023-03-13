@@ -8,7 +8,7 @@ def read():
     #rows = data_base.get_data("metrics", "service1", "CPU")
     #rows = data_base.get_data("predicted_metrics", "service1", "CPU")
     #rows = data_base.get_data_for_next_x_hours(1, 5)
-    rows = data_base.get_data_by_service_group(("service1", "service2", "service3"))
+    rows = data_base.get_data_by_service_group(("service1", "service3"))
     #rows = data_base.get_historical_data("metrics")
 
     for row in rows:

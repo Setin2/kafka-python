@@ -53,7 +53,7 @@ class Database():
         Given a list of services, return the rows where all the services in the list have been applied to the same single image
         The rows are groupd by images
     """
-    def get_data_by_service_group(self, list_of_services):
+    """def get_data_by_service_group(self, list_of_services):
         self.cursor.execute(
             "SELECT t1.image_ID, t1.service, t1.resource, t1.value, t1.timestamp "
             "FROM metrics t1 "
@@ -67,6 +67,29 @@ class Database():
             "GROUP BY t1.image_ID, t1.service, t1.resource, t1.value, t1.timestamp "
             "HAVING COUNT(DISTINCT t1.service) = 1; ",
             (list_of_services, list_of_services)
+        )
+        rows = self.cursor.fetchall()
+        return rows"""
+
+    def get_data_by_service_group(self, list_of_services):
+        self.cursor.execute(
+            "SELECT m1.image_ID, m1.service, m1.resource, m1.value, m1.timestamp "
+            "FROM metrics m1 "
+            "WHERE m1.service IN %s "
+            "AND NOT EXISTS ( "
+            "    SELECT 1 "
+            "    FROM metrics m2 "
+            "    WHERE m2.image_ID = m1.image_ID "
+            "    AND m2.service NOT IN %s "
+            ") "
+            "AND ( "
+            "    SELECT COUNT(DISTINCT m3.service) "
+            "    FROM metrics m3 "
+            "    WHERE m3.image_ID = m1.image_ID "
+            "    AND m3.service IN %s "
+            ") = %s "
+            "GROUP BY m1.image_ID, m1.service, m1.resource, m1.value, m1.timestamp;",
+            (list_of_services, list_of_services, list_of_services, len(list_of_services))
         )
         rows = self.cursor.fetchall()
         return rows

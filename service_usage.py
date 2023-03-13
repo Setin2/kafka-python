@@ -3,27 +3,47 @@ import database
 import math
 
 data_base = database.Database()
-#data = data_base.get_historical_data("metrics")
-#data = data_base.get_data_for_next_x_hours(1, 0)
-data = data_base.get_data_by_service_group(("service1", "service2", "service3"), timespan=3)
 
-# Load the data into a pandas DataFrame
-df = pd.DataFrame(data, columns=['image_ID', 'service', 'resource', 'value', 'datetime'])
-df['datetime'] = pd.to_datetime(df['datetime'])
+def get_expected_resource_usage(grouped):
+    for group, values in grouped:
+        # Create a new DataFrame for the current service and resource type with shape (timestamp, value)
+        data_df = pd.DataFrame({'datetime': values['datetime'], 'value': values['value']})
+        data_df = data_df.set_index('datetime')
 
-# Group the data by service name and resource type looping though them
-grouped = df.groupby(['service', 'resource'])
-for service_resource, values in grouped: # values = (image_ID, service, resource, value, timestamp)
-    # Create a new DataFrame for the current service and resource type with shape (timestamp, value)
-    data_df = pd.DataFrame({'datetime': values['datetime'], 'value': values['value']})
-    data_df = data_df.set_index('datetime')
+        sum_expected_usage = sum(data_df['value']) / len(data_df)
+        max_expected_usage = max(data_df['value'])
+        min_expected_usage = min(data_df['value'])
 
-    sum_expected_usage = sum(data_df['value']) / len(data_df)
-    max_expected_usage = max(data_df['value'])
-    min_expected_usage = min(data_df['value'])
+        #print(f"Minimum expected usage for {group} is: {min_expected_usage}")
+        #print(f"Average expected usage for {group} is: {sum_expected_usage}")
+        
+        # we round up to the nearest 10 to give some breathing room
+        print(f"Maximum expected usage for {group} is: {math.ceil(max_expected_usage/ 10) * 10}")
 
-    #print(f"Minimum usage for {service_resource} is: {min_expected_usage}")
-    #print(f"Average usage for {service_resource} is: {sum_expected_usage}")
+def main():
+    print("How do you want to group the services: ")
+    print("0. get all data ungrouped")
+    print("1. get data for the next x hours")
+    print("2. get data by service group")
+    choice = int(input())
+    data = []
+    grouped = None
+
+    if choice == 0:
+        data = data_base.get_historical_data("metrics")
+    elif choice == 1:
+        data = data_base.get_data_for_next_x_hours(1, 0)
+    elif choice == 2:
+        data = data_base.get_data_by_service_group(("service1", "service2", "service3"))
     
-    # we round up to the nearest 10 to give some breathing room
-    print(f"Maximum usage for {service_resource} is: {math.ceil(max_expected_usage/ 10) * 10}")
+    df = pd.DataFrame(data, columns=['image_ID', 'service', 'resource', 'value', 'datetime'])
+    df['datetime'] = pd.to_datetime(df['datetime'])
+
+    if choice == 0 or choice == 1:
+        grouped = df.groupby(['service', 'resource'])
+    else: grouped = df.groupby(['image_ID', 'service', 'resource'])
+
+    get_expected_resource_usage(grouped)
+
+if __name__ == '__main__':
+    main()
