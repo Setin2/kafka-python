@@ -58,14 +58,15 @@ if __name__ == '__main__':
     #producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
     producer = Producer()
     service = sys.argv[1]
+    image_ID = sys.argv[2]
 
     while True:
         cpu_usage = get_cpu_usage()
         mem_usage = get_memory_usage()
         disk_usage = get_disk_used()
-        producer.send("resources", service + " CPU", str(cpu_usage))
-        producer.send("resources", service + " RAM", str(mem_usage))
-        producer.send("resources", service + " DISK", str(disk_usage))
+        producer.send("resources", image_ID + " " + service + " CPU", str(cpu_usage))
+        producer.send("resources", image_ID + " " +  service + " RAM", str(mem_usage))
+        producer.send("resources", image_ID + " " +  service + " DISK", str(disk_usage))
 
         # Wait for 5 seconds before collecting and sending next data point
-        time.sleep(5)
+        time.sleep(1)

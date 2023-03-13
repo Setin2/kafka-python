@@ -46,10 +46,10 @@ def main():
     data_base = database.Database()
     try:
         for message in consumer:
-            service, resource = message.key.decode("utf-8").split(" ")
+            image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
-            data_base.insert_metric("metrics", service, resource, value)
+            data_base.insert_metric("metrics", image_ID, service, resource, value)
             plot.update(resource, float(value))
 
             # consume earliest available messages, don't commit offsets
