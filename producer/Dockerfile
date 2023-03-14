@@ -6,4 +6,4 @@ COPY . /app
 #RUN pip install -r requirements.txt
  
 ENTRYPOINT ["python"]
-CMD ["resource-monitor.py"]
+CMD ["producer.py"]

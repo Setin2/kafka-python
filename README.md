@@ -15,11 +15,12 @@ To start a consumer, run the command ``` python monitor.py ```. The consumer wil
 
 ## Database
 
-The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. The database tables have the following format: ``` (image_ID, service, resource, value, timestamp) ```
+The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. 
+The database tables have the following format: ``` (image_ID, service, resource, value, timestamp) ```
 
 ### Expected resource usage
 
-The file ``` service_usage.py ``` can be used to get the expected minimum/average/maxmimum resource usage for each service-resource pair. The simplest type of heuristics would be to assign resources based on these values.
+The file ``` service_usage.py ``` can be used to get the expected minimum/average/maxmimum resource usage for each service-resource pair based on the data in our database. The simplest type of heuristics would be to assign resources based on these values.
 
 ### Misc
 

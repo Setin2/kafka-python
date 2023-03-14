@@ -2,8 +2,6 @@ import pandas as pd
 import database
 import math
 
-data_base = database.Database()
-
 def get_expected_resource_usage(grouped):
     for group, values in grouped:
         # Create a new DataFrame for the current service and resource type with shape (timestamp, value)
@@ -21,6 +19,7 @@ def get_expected_resource_usage(grouped):
         print(f"Maximum expected usage for {group} is: {math.ceil(max_expected_usage/ 10) * 10}")
 
 def main():
+    data_base = database.Database()
     print("How do you want to group the services: ")
     print("0. get all data ungrouped")
     print("1. get data for the next x hours")

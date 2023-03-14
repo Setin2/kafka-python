@@ -20,18 +20,60 @@ class Database():
         self.connection = pool.getconn()
         pool.putconn(self.connection)
         self.cursor = self.connection.cursor()
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS metrics (image_ID varchar(255), service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS predicted_metrics (image_ID varchar(255), service varchar(255), resource varchar(255), value double precision, timestamp timestamp)")
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS metrics (
+                taskID int, 
+                serviceID int, 
+                resourceID int, 
+                value double precision, 
+                timestamp timestamp
+            );"""
+        )
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS service_lookup (
+                serviceID SERIAL PRIMARY KEY,
+                service_name TEXT UNIQUE NOT NULL
+            );"""
+        )
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS resource_lookup (
+                resourceID SERIAL PRIMARY KEY,
+                resource_name TEXT UNIQUE NOT NULL
+            );"""
+        )
+
+    """
+        Given the name of a service/resource, return their respective ID
+        If this service/resource isnt already in the database, we first insert it and give it an ID and then return it
+    """
+    def get_ID_from_name(self, table, row1, row2, name):
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                f"SELECT {row1} FROM {table} WHERE {row2} = '{name}'"
+            )
+            result = cursor.fetchone()
+            if result is None:
+                cursor.execute(
+                    f"INSERT INTO {table} ({row2}) VALUES ('{name}')"
+                )
+                self.connection.commit()
+                return cursor.lastrowid
+            else:
+                return result[0]
 
     """
         Insert a row in the given table
         The timestamp is the time of insertion by default, but it can be changed to be sent by the kafka producer
     """
-    def insert_metric(self, table, image_ID, service, resource, value, ts=None):
+    def insert_metric(self, table, taskID, service_name, resource_name, value, ts=None):
         if ts is None:
             ts = datetime.datetime.utcnow().replace(microsecond=0)
-        self.cursor.execute("INSERT INTO {table} (image_ID, service, resource, value, timestamp) VALUES (%s, %s, %s, %s, %s)"
-                            .format(table=table), (image_ID, service, resource, value, ts))
+        # First get the service and resource IDs from their names
+        serviceID = self.get_ID_from_name("service_lookup", "serviceID", "service_name", service_name)
+        resourceID = self.get_ID_from_name("resource_lookup", "resourceID", "resource_name", resource_name)
+        # Then insert the IDs in the table (NOT the names)
+        self.cursor.execute("INSERT INTO {table} (taskID, serviceID, resourceID, value, timestamp) VALUES (%s, %s, %s, %s, %s)"
+                            .format(table=table), (taskID, serviceID, resourceID, value, ts))
         self.connection.commit()
     
     """
@@ -45,9 +87,11 @@ class Database():
     """
         Return all rows in the given table, for the specified service-resource pair
     """
-    def get_data(self, table, service, resource):
-        self.cursor.execute("SELECT * FROM {table} WHERE resource = '{resource}' AND service = '{service}'"
-                            .format(table=table, resource=resource, service=service))
+    def get_data(self, table, service_name, resource_name):
+        serviceID = self.get_ID_from_name("service_lookup", "serviceID", "service_name", service_name)
+        resourceID = self.get_ID_from_name("resource_lookup", "resourceID", "resource_name", resource_name)
+        self.cursor.execute("SELECT * FROM {table} WHERE resourceID = '{resourceID}' AND serviceID = '{serviceID}'"
+                            .format(table=table, resourceID=resourceID, serviceID=serviceID))
         rows = self.cursor.fetchall()
         return rows
 
@@ -70,24 +114,27 @@ class Database():
         The rows are grouped by images
     """
     def get_data_by_service_group(self, list_of_services):
+        list_of_service_IDs = ()
+        for name in list_of_services:
+            list_of_service_IDs += (self.get_ID_from_name("service_lookup", "serviceID", "service_name", name),)
         self.cursor.execute(
-            "SELECT m1.image_ID, m1.service, m1.resource, m1.value, m1.timestamp "
+            "SELECT m1.taskID, m1.serviceID, m1.resourceID, m1.value, m1.timestamp "
             "FROM metrics m1 "
-            "WHERE m1.service IN %s "
+            "WHERE m1.serviceID IN %s "
             "AND NOT EXISTS ( "
             "    SELECT 1 "
             "    FROM metrics m2 "
-            "    WHERE m2.image_ID = m1.image_ID "
-            "    AND m2.service NOT IN %s "
+            "    WHERE m2.taskID = m1.taskID "
+            "    AND m2.serviceID NOT IN %s "
             ") "
             "AND ( "
-            "    SELECT COUNT(DISTINCT m3.service) "
+            "    SELECT COUNT(DISTINCT m3.serviceID) "
             "    FROM metrics m3 "
-            "    WHERE m3.image_ID = m1.image_ID "
-            "    AND m3.service IN %s "
+            "    WHERE m3.taskID = m1.taskID "
+            "    AND m3.serviceID IN %s "
             ") = %s "
-            "GROUP BY m1.image_ID, m1.service, m1.resource, m1.value, m1.timestamp;",
-            (list_of_services, list_of_services, list_of_services, len(list_of_services))
+            "GROUP BY m1.taskID, m1.serviceID, m1.resourceID, m1.value, m1.timestamp;",
+            (list_of_service_IDs, list_of_service_IDs, list_of_service_IDs, len(list_of_services))
         )
         rows = self.cursor.fetchall()
         return rows

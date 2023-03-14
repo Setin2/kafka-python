@@ -50,5 +50,5 @@ for name, group in grouped:
     predicted_df = pd.concat([next_12_hours[['service', 'resource', 'datetime', 'predicted_value']], predicted_df])#predicted_df.append(next_12_hours[['service', 'resource', 'datetime', 'predicted_value']])
 
 # Save the predicted resource usage data to the timeseriesDB
-for index, row in predicted_df.iterrows():
-    data_base.insert_metric("predicted_metrics", row['service'], row['resource'], row['predicted_value'], row['datetime'])
+#for index, row in predicted_df.iterrows():
+    #data_base.insert_metric("predicted_metrics", row['service'], row['resource'], row['predicted_value'], row['datetime'])
