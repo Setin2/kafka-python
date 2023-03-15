@@ -77,7 +77,7 @@ def main():
             image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
-            data_base.insert_metric("metrics", image_ID, service, resource, value)
+            data_base.insert_metric(image_ID, service, resource, value)
 
             # get the expected usage given our model and plot it
             # in the future, we need a way to automatically get the service group for the current task and the run_time

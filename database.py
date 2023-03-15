@@ -10,10 +10,6 @@ class Database():
         Since neural networks work with numbers and not strings, we assign each service and resource an ID
         The IDs are assigned incrementally for each new service/resource in the service_lookup/resource_lookup databases by order of 10
         We do it by order of 10 so that the input we feed to the neural network isnt too similar
-
-        Args:
-        Attributes:
-        Returns:
     """
     def __init__(self):
         pool = psycopg2.pool.SimpleConnectionPool(
@@ -109,12 +105,11 @@ class Database():
         result = self.cursor.fetchone()
         return result
 
-    def insert_metric(self, table, taskID, service_name, resource_name, value, ts=None):
+    def insert_metric(self, taskID, service_name, resource_name, value, ts=None):
         """        
             Insert a row in the given table
 
             Args:
-                table (str): table we wish to insert the data into
                 taskID (int): ID of the task
                 service_name (str): name of the service
                 resource_name (str): name of the resource
@@ -126,11 +121,9 @@ class Database():
         # First get the service and resource IDs from their names
         serviceID = self.get_ID_from_name(0, service_name)
         resourceID = self.get_ID_from_name(1, resource_name)
-        if serviceID == 0 or resourceID == 0:
-            print("Found 0 given: ", service_name, resource_name)
         # Then insert the IDs in the table (NOT the names)
-        self.cursor.execute("INSERT INTO {table} (taskID, serviceID, resourceID, value, timestamp) VALUES (%s, %s, %s, %s, %s)"
-                            .format(table=table), (taskID, serviceID, resourceID, value, ts))
+        self.cursor.execute("INSERT INTO metrics (taskID, serviceID, resourceID, value, timestamp) VALUES (%s, %s, %s, %s, %s)", 
+                            (taskID, serviceID, resourceID, value, ts))
         self.connection.commit()
     
     def drop_table(self, table):
@@ -144,12 +137,11 @@ class Database():
         self.connection.commit()
         print(f"Dropped table {table}")
 
-    def get_data(self, table, service_name, resource_name):
+    def get_data(self, service_name, resource_name):
         """
             Get data based on a service-resource pair
 
             Args:
-                table (str): name of the table we want data from
                 service_name (str): name of the service
                 resource_name (str): name of the resource
 
@@ -160,8 +152,7 @@ class Database():
         serviceID = self.get_ID_from_name("service_lookup", "serviceID", "service_name", service_name)
         resourceID = self.get_ID_from_name("resource_lookup", "resourceID", "resource_name", resource_name)
         # look them up using the IDs, not the names
-        self.cursor.execute("SELECT * FROM {table} WHERE resourceID = '{resourceID}' AND serviceID = '{serviceID}'"
-                            .format(table=table, resourceID=resourceID, serviceID=serviceID))
+        self.cursor.execute(f"SELECT * FROM metrics WHERE resourceID = '{resourceID}' AND serviceID = '{serviceID}'")
         rows = self.cursor.fetchall()
         return rows
 
@@ -182,7 +173,7 @@ class Database():
         self.cursor.execute("SELECT * FROM metrics WHERE timestamp >= %s AND timestamp <= %s", (ts, ts_plus))
         rows = self.cursor.fetchall()
         if not rows:
-            print(f"No data found for the next {hour} hours and {minutes} minutes. No service is usually running in this timespan.")
+            print(f"No data found for the next {hour} hours and {minutes} minutes. No service is usually running in this timeslot.")
         return rows
 
     def get_data_by_service_group(self, list_of_services):
