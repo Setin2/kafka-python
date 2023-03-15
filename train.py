@@ -52,7 +52,7 @@ def save_model(model, optimizer):
         'optimizer_state_dict': optimizer.state_dict()
     }, "model_weights.pth")
 
-def main(EPOCHS, LR, savemodel=True, savefig=False):
+def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     # Create a pandas dataframe from all the data we acumulated
     data_base = database.Database()
     data = data_base.get_historical_data("metrics")
@@ -61,7 +61,7 @@ def main(EPOCHS, LR, savemodel=True, savefig=False):
 
     model = network.ServiceValuePredictor(input_size=1)
     optimizer = Adam(model.parameters(), lr=LR)
-    model.load_model(optimizer, train=True)
+    if load_model: model.load_model(optimizer, train=True)
 
     # we group the rows by task, each group a member of the list
     tasks = [d for _, d in df.groupby(['taskID'])]
@@ -76,7 +76,6 @@ def main(EPOCHS, LR, savemodel=True, savefig=False):
         loss = train(model, optimizer, tasks)
         loss_list.append(loss)
 
-    print(loss_list)
     test_inputs = [20, 10, 30] + [20] + [20] + [20] # should be between 80 - 85
     test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
     prediction = model(test_inputs)
@@ -92,4 +91,4 @@ def main(EPOCHS, LR, savemodel=True, savefig=False):
     if savemodel: save_model(model, optimizer)
 
 if __name__ == '__main__':
-    main(EPOCHS=100, LR=0.001, savemodel=True, savefig=False)
+    main(EPOCHS=50, LR=0.001, load_model=False, savemodel=True, savefig=False)

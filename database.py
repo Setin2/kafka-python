@@ -61,12 +61,16 @@ class Database():
                 resource_name TEXT UNIQUE NOT NULL
             );"""
         )
-
-    def get_ID_from_name(self, table, row1, row2, name):
+    
+    def get_ID_from_name(self, type, name):
         """
             Given the name of a service/resource, return their respective ID
+            Type 0 means we want the name of a service, while type 1 means we want the name of a resource
             If this service/resource isnt already in the database, we first insert it and give it an ID and then return it
         """
+        table, row1, row2 = "", "", ""
+        if type == 0: table, row1, row2 = "service_lookup", "serviceID", "service_name"
+        else: table, row1, row2 = "resource_lookup", "resourceID", "resource_name"
         with self.connection.cursor() as cursor:
             cursor.execute(
                 f"SELECT {row1} FROM {table} WHERE {row2} = '{name}'"
@@ -81,23 +85,13 @@ class Database():
             else:
                 return result[0]
     
-    def get_service_name_from_ID(self, ID):
+    def get_name_from_ID(self, type, ID):
         """
-            Return the name of a service given its ID
+            Return the name of a service/resource given its ID
+            Type 0 means we want the name of a service, while type 1 means we want the name of a resource
         """
-        self.cursor.execute(
-            f"SELECT service_name FROM service_lookup WHERE serviceID = '{ID}'"
-        )
-        result = self.cursor.fetchone()
-        return result
-
-    def get_resource_name_from_ID(self, ID):
-        """
-            Return the name of a resource given its ID
-        """
-        self.cursor.execute(
-            f"SELECT resource_name FROM resource_lookup WHERE resourceID = '{ID}'"
-        )
+        if type == 0: self.cursor.execute(f"SELECT service_name FROM service_lookup WHERE serviceID = '{ID}'")
+        else: self.cursor.execute(f"SELECT resource_name FROM resource_lookup WHERE resourceID = '{ID}'")
         result = self.cursor.fetchone()
         return result
 
@@ -109,8 +103,8 @@ class Database():
         if ts is None:
             ts = datetime.datetime.utcnow().replace(microsecond=0)
         # First get the service and resource IDs from their names
-        serviceID = self.get_ID_from_name("service_lookup", "serviceID", "service_name", service_name)
-        resourceID = self.get_ID_from_name("resource_lookup", "resourceID", "resource_name", resource_name)
+        serviceID = self.get_ID_from_name(0, service_name)
+        resourceID = self.get_ID_from_name(1, resource_name)
         # Then insert the IDs in the table (NOT the names)
         self.cursor.execute("INSERT INTO {table} (taskID, serviceID, resourceID, value, timestamp) VALUES (%s, %s, %s, %s, %s)"
                             .format(table=table), (taskID, serviceID, resourceID, value, ts))
@@ -159,7 +153,7 @@ class Database():
         # we get the ID of each service in the list, we can use the names
         list_of_service_IDs = ()
         for name in list_of_services:
-            list_of_service_IDs += (self.get_ID_from_name("service_lookup", "serviceID", "service_name", name),)
+            list_of_service_IDs += (self.get_ID_from_name(0, name),)
         self.cursor.execute(
             "SELECT m1.taskID, m1.serviceID, m1.resourceID, m1.value, m1.timestamp "
             "FROM metrics m1 "
@@ -190,6 +184,11 @@ class Database():
         self.cursor.execute("SELECT * FROM {table}".format(table=table))
         rows = self.cursor.fetchall()
         return rows
+    
+    def delete_row(self, table, row, value):
+        self.cursor.execute(f"DELETE FROM {table} WHERE {row}={value}")
+        self.connection.commit()
+        print(f"All rows where {row}={value} have been deleted")
     
     def close_connection(self):
         """
