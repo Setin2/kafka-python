@@ -64,7 +64,7 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     if load_model: model.load_model(optimizer, train=True)
 
     # we group the rows by task, each group a member of the list
-    tasks = [d for _, d in df.groupby(['taskID'])]
+    tasks = [d for _, d in df.groupby('taskID')]
 
     fig, ax = plt.subplots()
     ax.title.set_text('Loss')
@@ -86,9 +86,10 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     prediction = model(test_inputs)
     print(prediction)
 
+    print("final loss: ", loss_list[len(loss_list) - 1])
     plot_loss(ax, loss_list)
     if savefig: plt.savefig('loss.png')
     if savemodel: save_model(model, optimizer)
 
 if __name__ == '__main__':
-    main(EPOCHS=50, LR=0.001, load_model=False, savemodel=True, savefig=False)
+    main(EPOCHS=2, LR=0.001, load_model=False, savemodel=False, savefig=False)

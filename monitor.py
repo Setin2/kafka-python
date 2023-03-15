@@ -71,6 +71,7 @@ def main():
             inputs = [20, 10, 30] + [serviceID] + [resourceID] + [run_time]
             inputs = torch.tensor(inputs, dtype=torch.float32)
             prediction = model(inputs).data
+            prediction = np.asarray(prediction)[0]
             plot_updated.update(resource, prediction)
 
             # consume earliest available messages, don't commit offsets

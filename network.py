@@ -31,4 +31,3 @@ class ServiceValuePredictor(nn.Module):
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             if train: self.train()
             else: self.eval()
-            self.eval()
