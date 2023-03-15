@@ -28,4 +28,6 @@ The file ``` read_data.py ``` is simply a test file used to drop tables and read
 
 Each example service has a folder with a dockerfile and kubernetes deployment files in it. Images can be build and run for the 2 services, but the kubernetes deployment files are not correctly configured yet. Thus, monitoring is done manually for now.
 
-The file ``` predictive_scaling.py ``` will be used to train ML model(s) to predict the resource consumption based on different parameters. For now the prediction of resource consumption is done via a simple linear regression model (which of course gives very bad results).
+The file ``` train.py ``` is used to train a neural network (its code can be seen in ``` network.py ```). The network takes in a list of services with all the unique services we run for a given task, a service-resource pair and a value representing how long we have been running the task for. The output should be how much of that resource, this service will be consuming at this point in time in the task.
+
+The weights of the network and its optimizer are saved in a ``` model_weights.pth ``` file. This file is loaded again in ``` test.py ``` to of course use the model (for now only for testing). The loss during training is also saved in a ``` .png ``` file.

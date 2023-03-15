@@ -18,9 +18,9 @@ def train(model, optimizer, tasks):
     for task_group in tasks:
         # keep track of the start index of this start group because we need it to compute the run-time
         task_group_start_index = task_group_cur_index
+        unique_services = list(task_group['serviceID'].unique())
         # for each row in the task group
         for _ in range(len(task_group)):
-            unique_services = list(task_group['serviceID'].unique())
             run_time = (task_group['timestamp'][task_group_cur_index] - task_group['timestamp'][task_group_start_index]).total_seconds()
             current_service = task_group['serviceID'][task_group_cur_index]
             current_resource = task_group['resourceID'][task_group_cur_index]
@@ -29,14 +29,11 @@ def train(model, optimizer, tasks):
             # we feed the network the current service-resource pair, how much time went since we started the task (in seconds), 
             # and a list of all the unique services that are run in this task 
             inputs = unique_services + [current_service] + [current_resource] + [run_time]
-            inputs = torch.tensor(inputs, dtype=torch.float32)#.unsqueeze(0).unsqueeze(-1)
-            #print(inputs)
+            inputs = torch.tensor(inputs, dtype=torch.float32)
 
             # Forward pass: the output should be the value representing the resource consumption for that service-resource pair
             preds = model(inputs)
-            #print(preds, current_value)
             loss = nn.MSELoss()(preds, current_value)
-            #loss = nn.MSELoss()(preds.squeeze(-1), current_value)
             cum_loss += loss.data
 
             optimizer.zero_grad()
@@ -63,8 +60,8 @@ def main(EPOCHS, LR, savemodel=True, savefig=False):
     df = pd.DataFrame(data, columns=['taskID', 'serviceID', 'resourceID', 'value', 'timestamp'])
 
     model = network.ServiceValuePredictor(input_size=1)
-    #model = network.ServiceValuePredictorRNN(1, 64)
     optimizer = Adam(model.parameters(), lr=LR)
+    model.load_model(optimizer, train=True)
 
     # we group the rows by task, each group a member of the list
     tasks = [d for _, d in df.groupby(['taskID'])]
@@ -79,19 +76,20 @@ def main(EPOCHS, LR, savemodel=True, savefig=False):
         loss = train(model, optimizer, tasks)
         loss_list.append(loss)
 
-    test_inputs = [2, 1, 3] + [2] + [2] + [20]
-    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)#.unsqueeze(0).unsqueeze(-1)
+    print(loss_list)
+    test_inputs = [20, 10, 30] + [20] + [20] + [20] # should be between 80 - 85
+    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
     prediction = model(test_inputs)
     print(prediction)
 
-    test_inputs = [2, 1, 3] + [1] + [1] + [20]
-    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)#.unsqueeze(0).unsqueeze(-1)
+    test_inputs = [20, 10, 30] + [10] + [10] + [20] # should be around 20
+    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
     prediction = model(test_inputs)
     print(prediction)
 
     plot_loss(ax, loss_list)
-    if savefig: plt.savefig('loss2.png')
+    if savefig: plt.savefig('loss.png')
     if savemodel: save_model(model, optimizer)
 
 if __name__ == '__main__':
-    main(EPOCHS=5, LR=0.001, savemodel=True, savefig=True)
+    main(EPOCHS=100, LR=0.001, savemodel=True, savefig=False)

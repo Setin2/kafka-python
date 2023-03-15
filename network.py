@@ -1,7 +1,7 @@
-import torch.nn as nn
-import torch.nn.functional as F
+import os
 import torch
-from torch.nn.utils.rnn import pack_sequence, pad_packed_sequence
+import torch.nn as nn
+
 
 class ServiceValuePredictor(nn.Module):
     def __init__(self, input_size, hidden_size=128, num_layers=2):
@@ -12,8 +12,6 @@ class ServiceValuePredictor(nn.Module):
         self.fc3 = nn.Linear(32, 1)
 
     def forward(self, inputs):
-        # Add an extra dimension to input tensor to make it 2D
-        #inputs = inputs.unsqueeze(0).unsqueeze(-1)
         # Reshape input tensor to have batch size of 1
         inputs = inputs.reshape(1, -1, 1)
 
@@ -24,20 +22,13 @@ class ServiceValuePredictor(nn.Module):
         x = torch.relu(self.fc1(h_n[-1]))
         x = torch.relu(self.fc2(x))
         x = self.fc3(x)
-        return x.squeeze()
+        return x.squeeze(1)
 
-class ServiceValuePredictorRNN(nn.Module):
-    def __init__(self, input_size, hidden_size):
-        super().__init__()
-        self.rnn = nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
-        self.attention = nn.Linear(hidden_size, hidden_size)
-        self.fc = nn.Linear(hidden_size, 1)
-
-    def forward(self, x):
-        batch_size, seq_len, input_size = x.size()  # get the input size and sequence length
-        h0 = torch.zeros(1, batch_size, self.rnn.hidden_size).to(x.device)  # initialize the hidden state
-        out, h_n = self.rnn(x, h0)  # pass the input through the RNN
-        attn_weights = torch.softmax(self.attention(out), dim=1)  # compute attention weights over the sequence
-        context = torch.bmm(attn_weights.transpose(1, 2), out)  # compute a weighted sum of the hidden states
-        out = self.fc(context.squeeze(dim=1))  # pass the weighted sum through a linear layer
-        return out
+    def load_model(self, optimizer, train=False):
+        if os.path.exists("model_weights.pth"):
+            checkpoint = torch.load('model_weights.pth')
+            self.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if train: self.train()
+            else: self.eval()
+            self.eval()
