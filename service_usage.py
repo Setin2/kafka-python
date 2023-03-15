@@ -3,6 +3,16 @@ import database
 import math
 
 def get_expected_resource_usage_for_all_pairs(grouped, data_base):
+    """
+        Print the min/average/max resource usage for each service-resource pair
+
+        Args:
+            grouped (DataFrame): A numerical value
+            data_base: database.Database object
+
+        Returns:
+            int or float: The square of x
+    """
     for group, values in grouped:
         # Create a new DataFrame for the current service and resource type with shape (timestamp, value)
         data_df = pd.DataFrame({'datetime': values['datetime'], 'value': values['value']})

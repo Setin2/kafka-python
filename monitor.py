@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, draw, show, ion
 
 class Plot():
+    """
+        Class for initializing a figure with 4 plots (for 4 resources whcih can be changed later)
+    """
     def __init__(self):
         self.labels = ['Used', 'Available']
         self.fig1, self.ax1 = plt.subplots(2, 2)
@@ -25,6 +28,13 @@ class Plot():
         plt.show()
 
     def update(self, key, value):
+        """
+            Update one of the 4 plots
+
+            Args:
+                key (str): the resource associated with the plot
+                value (float): the new value of the resource
+        """
         if "CPU" in key:
             self.ax1[0, 0].clear()
             self.ax1[0, 0].pie([value, 100-value], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
@@ -43,6 +53,12 @@ class Plot():
         self.fig1.canvas.flush_events()
 
 def load_model():
+    """
+        Load the model we (hopefully) previously trained
+
+        Returns:
+            network.ServiceValuePredictor: the trained model in evaluation mode
+    """
     model = network.ServiceValuePredictor(input_size=1)
     optimizer = Adam(model.parameters(), lr=0.001)
     model.load_model(optimizer)

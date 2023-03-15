@@ -10,6 +10,10 @@ class Database():
         Since neural networks work with numbers and not strings, we assign each service and resource an ID
         The IDs are assigned incrementally for each new service/resource in the service_lookup/resource_lookup databases by order of 10
         We do it by order of 10 so that the input we feed to the neural network isnt too similar
+
+        Args:
+        Attributes:
+        Returns:
     """
     def __init__(self):
         pool = psycopg2.pool.SimpleConnectionPool(
@@ -55,10 +59,15 @@ class Database():
         )
     
     def get_ID_from_name(self, type, name):
-        """
-            Given the name of a service/resource, return their respective ID
-            Type 0 means we want the name of a service, while type 1 means we want the name of a resource
-            If this service/resource isnt already in the database, we first insert it and give it an ID and then return it
+        """        
+            Get the ID of a service/resource given its name
+
+            Args:
+                type (int): 0 for service, 1 for resource
+                name (str): name of the service/resource
+            
+            Returns:
+                int: the ID of the given service/resource
         """
         table, row1, row2 = "", "", ""
         if type == 0: table, row1, row2 = "service_lookup", "serviceID", "service_name"
@@ -85,9 +94,15 @@ class Database():
                 return result[0]
     
     def get_name_from_ID(self, type, ID):
-        """
-            Return the name of a service/resource given its ID
-            Type 0 means we want the name of a service, while type 1 means we want the name of a resource
+        """        
+            Get the name of a service/resource given its ID
+
+            Args:
+                type (int): 0 for service, 1 for resource
+                ID (int): ID of the service/resource
+            
+            Returns:
+                str: the name of the given service/resource ID
         """
         if type == 0: self.cursor.execute(f"SELECT service_name FROM service_lookup WHERE serviceID = '{ID}'")
         else: self.cursor.execute(f"SELECT resource_name FROM resource_lookup WHERE resourceID = '{ID}'")
@@ -95,9 +110,16 @@ class Database():
         return result
 
     def insert_metric(self, table, taskID, service_name, resource_name, value, ts=None):
-        """
+        """        
             Insert a row in the given table
-            The timestamp is the time of insertion by default, but it can be changed to be sent by the kafka producer
+
+            Args:
+                table (str): table we wish to insert the data into
+                taskID (int): ID of the task
+                service_name (str): name of the service
+                resource_name (str): name of the resource
+                value (float): value representing the resource consumption
+                ts (datetime): timestamp is the time of insertion by default, but it can be changed to be sent by the kafka producer
         """
         if ts is None:
             ts = datetime.datetime.utcnow().replace(microsecond=0)
@@ -114,6 +136,9 @@ class Database():
     def drop_table(self, table):
         """
             Drop the specified table
+
+            Args:
+                table (str): name of the table we wish to drop
         """
         self.cursor.execute("DROP TABLE {table};".format(table=table))
         self.connection.commit()
@@ -121,7 +146,15 @@ class Database():
 
     def get_data(self, table, service_name, resource_name):
         """
-            Return all rows in the given table, for the specified service-resource pair
+            Get data based on a service-resource pair
+
+            Args:
+                table (str): name of the table we want data from
+                service_name (str): name of the service
+                resource_name (str): name of the resource
+
+            Returns:
+                [(int, int, int, float, datetime)]: all rows in the given table, for the specified service-resource pair
         """
         # get the service and resource IDs
         serviceID = self.get_ID_from_name("service_lookup", "serviceID", "service_name", service_name)
@@ -134,8 +167,15 @@ class Database():
 
     def get_data_for_next_x_hours(self, hour, minutes):
         """
-            Return all the rows where the data was stored between the current hour, and timedelta(hours=hour, minutes=minutes) in the future
-            Not sure if we will need to inspect data based on time of day, but here it is if needed
+            Get data that was stored between the current time of the day, and timedelta(hours=hour, minutes=minutes) in the future.
+            Not sure if we will need to inspect data based on time of day, but here it is if needed.
+
+            Args:
+                hour (int): number of hours
+                minutes (int): number of minutes
+
+            Returns:
+                [(int, int, int, float, datetime)]: all rows in the given table, given the desired timeslot
         """
         ts = datetime.datetime.utcnow().replace(microsecond=0)
         ts_plus = ts + timedelta(hours=hour, minutes=minutes)
@@ -148,8 +188,14 @@ class Database():
     def get_data_by_service_group(self, list_of_services):
         """
             A task (group of services) will be applied to an image
-            Given a list of services, return the rows where the exact services in the list have been applied to the same single image
-            The rows are grouped by images
+            Given a list of services, we might want the rows where the exact services in the list have been applied to the same single image
+
+            Args:
+                list_of_services ([str]): list of names of services
+
+            Returns:
+                [(int, int, int, float, datetime)]: all rows where the exact services in list_of_services have been applied to the same single image, grouped by taskID
+        
         """
         # we get the ID of each service in the list, we can use the names
         list_of_service_IDs = ()
@@ -180,13 +226,28 @@ class Database():
 
     def get_historical_data(self, table):
         """
-            Return all the rows in a given table
+            Get all the rows in a given table
+
+            Args:
+                table (str): name of the table
+
+            Returns:
+                [(int, int, int, float, datetime)]: all the rows in a given table
         """
         self.cursor.execute("SELECT * FROM {table}".format(table=table))
         rows = self.cursor.fetchall()
         return rows
     
     def delete_row(self, table, row, value):
+        """
+            Delete every row of this name with this value
+
+            Args:
+                table (str): name of the table we wish to delete from
+                row (str): name of the row
+                value (int/float/datetime): value of the rows we wish to delete
+        """
+
         self.cursor.execute(f"DELETE FROM {table} WHERE {row}={value}")
         self.connection.commit()
         print(f"All rows where {row}={value} have been deleted")
