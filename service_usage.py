@@ -7,11 +7,8 @@ def get_expected_resource_usage_for_all_pairs(grouped, data_base):
         Print the min/average/max resource usage for each service-resource pair
 
         Args:
-            grouped (DataFrame): A numerical value
-            data_base: database.Database object
-
-        Returns:
-            int or float: The square of x
+            grouped (DataFrame): a dataframe with data from the our database grouped by service-resource pair
+            data_base (database.Database object): our database
     """
     for group, values in grouped:
         # Create a new DataFrame for the current service and resource type with shape (timestamp, value)
@@ -33,6 +30,14 @@ def get_expected_resource_usage_for_all_pairs(grouped, data_base):
         print(f"Maximum expected {resource} usage for {service} is: {math.ceil(max_expected_usage/ 10) * 10}")
 
 def get_expected_resource_usage_for_sepcific_pair(df, data_base, service_name, resource_name):
+    """
+        Print the min/average/max resource usage for the given service-resource pair
+
+        Args:
+            data_base (database.Database object): our database
+            service_name (str): the name of the service
+            resource_name (str): the name of the resource
+    """
     serviceID = data_base.get_ID_from_name(0, service_name)
     resourceID = data_base.get_ID_from_name(1, resource_name)
     rows = df.loc[(df['service'] == serviceID) & (df['resource'] == resourceID)]

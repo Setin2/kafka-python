@@ -194,7 +194,7 @@ class Database():
                 list_of_services ([str]): list of names of services
 
             Returns:
-                [(int, int, int, float, datetime)]: all rows where the exact services in list_of_services have been applied to the same single image, grouped by taskID
+                [(int, int, int, float, datetime)]: all rows where the exact services in list_of_services have been applied to the same single task, grouped by taskID
         
         """
         # we get the ID of each service in the list, we can use the names

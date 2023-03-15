@@ -7,14 +7,22 @@ from torch.optim import Adam
 import matplotlib.pyplot as plt
 
 def train(model, optimizer, tasks):
-    cum_loss = 0
-    task_group_cur_index = 0
-    task_group_start_index = 0
     """
         We train by task group since then its easier to get the list of unique services for the task
         We dont feed batches to the network but we need to keep track of how many forward passes we made
         Otherwise, when we move to the next task group, we start again from index 0, but the indices of the dataframes do not go back to 0
+    
+        Args:
+            model (network.ServiceValuePredictor object): the model we wish to train
+            optimizer (torch.optim object): the optimizer of our model
+            tasks ([DataFrame]): list of DataFrames where each DataFrame is a group of rows from the database for each task
+        
+        Returns:
+            float: the mean loss for this epoch
     """
+    cum_loss = 0
+    task_group_cur_index = 0
+    task_group_start_index = 0
     for task_group in tasks:
         # keep track of the start index of this start group because we need it to compute the run-time
         task_group_start_index = task_group_cur_index
