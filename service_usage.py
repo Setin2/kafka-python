@@ -51,7 +51,7 @@ def main():
     elif choice == 1:
         data = data_base.get_data_for_next_x_hours(1, 0)
     elif choice == 2:
-        data = data_base.get_data_by_service_group(("service1", "service2", "service3"))
+        data = data_base.get_data_by_service_group(("service2", "service1", "service3"))
     
     df = pd.DataFrame(data, columns=['image_ID', 'service', 'resource', 'value', 'datetime'])
     df['datetime'] = pd.to_datetime(df['datetime'])

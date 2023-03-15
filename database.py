@@ -3,14 +3,6 @@ import psycopg2
 import psycopg2.pool
 from datetime import timedelta
 
-# The query for incrementing again by 1 instead of 10
-#self.cursor.execute("""
-#    CREATE TABLE IF NOT EXISTS service_lookup (
-#        serviceID SERIAL PRIMARY KEY,
-#        service_name TEXT UNIQUE NOT NULL
-#    );"""
-#)
-
 class Database():
     """
         The postgreSQL server is run in docker
@@ -72,16 +64,23 @@ class Database():
         if type == 0: table, row1, row2 = "service_lookup", "serviceID", "service_name"
         else: table, row1, row2 = "resource_lookup", "resourceID", "resource_name"
         with self.connection.cursor() as cursor:
+            # check if this service/resource has already been assigned an ID
             cursor.execute(
                 f"SELECT {row1} FROM {table} WHERE {row2} = '{name}'"
             )
             result = cursor.fetchone()
             if result is None:
+                # if not, we insert the service/resource in the lookup table (giving it an ID)
                 cursor.execute(
                     f"INSERT INTO {table} ({row2}) VALUES ('{name}')"
                 )
                 self.connection.commit()
-                return cursor.lastrowid
+                # and then retrieve the newly created ID
+                cursor.execute(
+                    f"SELECT {row1} FROM {table} ORDER BY {row1} DESC LIMIT 1"
+                )
+                result = self.cursor.fetchone()
+                return result
             else:
                 return result[0]
     
@@ -105,6 +104,8 @@ class Database():
         # First get the service and resource IDs from their names
         serviceID = self.get_ID_from_name(0, service_name)
         resourceID = self.get_ID_from_name(1, resource_name)
+        if serviceID == 0 or resourceID == 0:
+            print("Found 0 given: ", service_name, resource_name)
         # Then insert the IDs in the table (NOT the names)
         self.cursor.execute("INSERT INTO {table} (taskID, serviceID, resourceID, value, timestamp) VALUES (%s, %s, %s, %s, %s)"
                             .format(table=table), (taskID, serviceID, resourceID, value, ts))

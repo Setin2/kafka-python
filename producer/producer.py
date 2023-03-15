@@ -6,6 +6,7 @@ import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
+# kubernetes stuff, not relevant for now
 KAFKA_TOPIC = 'resource-monitor'
 KAFKA_BOOTSTRAP_SERVERS = 'kafka-broker:9092'
 
@@ -43,30 +44,28 @@ def get_memory_usage():
     mem_percent = mem_stats.percent
     return mem_percent
 
-def get_disk_used():
+def get_disk_usage():
     disk_stats = psutil.disk_usage('/')
     disk_total = disk_stats.total
     disk_used = disk_stats.used
     disk_percent = disk_stats.percent
     return disk_percent
 
-def get_current_time():
-    now = datetime.datetime.now()
-    return now.time()
-
 if __name__ == '__main__':
     #producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
     producer = Producer()
+
+    # these should be collected automatically in the future
     service = sys.argv[1]
-    image_ID = sys.argv[2]
+    taskID = sys.argv[2]
 
     while True:
         cpu_usage = get_cpu_usage()
         mem_usage = get_memory_usage()
-        disk_usage = get_disk_used()
-        producer.send("resources", image_ID + " " + service + " CPU", str(cpu_usage))
-        producer.send("resources", image_ID + " " +  service + " RAM", str(mem_usage))
-        producer.send("resources", image_ID + " " +  service + " DISK", str(disk_usage))
+        disk_usage = get_disk_usage()
+        producer.send("resources", taskID + " " + service + " CPU", str(cpu_usage))
+        producer.send("resources", taskID + " " +  service + " RAM", str(mem_usage))
+        producer.send("resources", taskID + " " +  service + " DISK", str(disk_usage))
 
-        # Wait for 5 seconds before collecting and sending next data point
+        # Wait for 1 second before collecting and sending next data point
         time.sleep(1)

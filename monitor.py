@@ -1,11 +1,11 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import plot, draw, show, ion
-from kafka import KafkaConsumer
-import database
 import torch
 import network
+import database
+import numpy as np
 from torch.optim import Adam
+from kafka import KafkaConsumer
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot, draw, show, ion
 
 class Plot():
     def __init__(self):
@@ -61,8 +61,7 @@ def main():
             image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
-            #data_base.insert_metric("metrics", image_ID, service, resource, value)
-            plot_real.update(resource, float(value))
+            data_base.insert_metric("metrics", image_ID, service, resource, value)
 
             # get the expected usage given our model and plot it
             # in the future, we need a way to automatically get the service group for the current task and the run_time
@@ -72,6 +71,9 @@ def main():
             inputs = torch.tensor(inputs, dtype=torch.float32)
             prediction = model(inputs).data
             prediction = np.asarray(prediction)[0]
+
+            # visualize the actual and the predicted resource usage for this service-resource pair
+            plot_real.update(resource, float(value))
             plot_updated.update(resource, prediction)
 
             # consume earliest available messages, don't commit offsets
