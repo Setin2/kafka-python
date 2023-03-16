@@ -1,5 +1,4 @@
 import torch
-import time
 import network
 import database
 import numpy as np
@@ -8,23 +7,20 @@ from kafka import KafkaConsumer
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, draw, show, ion
 
-class Plot():
+class Pie_Plot():
     """
         Class for initializing a figure with 4 plots (for 4 resources which can be changed later)
+        The figures are pie charts
     """
     def __init__(self):
         self.labels = ['Used', 'Available']
-        self.fig1, self.ax1 = plt.subplots(2, 2)
+        self.fig, self.axes = plt.subplots(2, 2)
+        self.axes = self.axes.flatten()
         plt.ion()
-        self.ax1[0, 0].pie([50, 50], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-        self.ax1[0, 0].axis('equal')
-        self.ax1[0, 0].title.set_text('CPU')
-        self.ax1[0, 1].pie([50, 50], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-        self.ax1[0, 1].axis('equal')
-        self.ax1[0, 1].title.set_text('RAM')
-        self.ax1[1, 0].pie([50, 50], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-        self.ax1[1, 0].axis('equal')
-        self.ax1[1, 0].title.set_text('DISK')
+        for i, ax in enumerate(self.axes):
+            ax.pie([50, 50], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
+            ax.axis('equal')
+            ax.set_title(['CPU', 'RAM', 'DISK', 'None'][i])
         plt.pause(0.001)
         plt.show()
 
@@ -37,30 +33,31 @@ class Plot():
                 value (float): the new value of the resource
         """
         if "CPU" in key:
-            self.ax1[0, 0].clear()
-            self.ax1[0, 0].pie([value, 100-value], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-            self.ax1[0, 0].title.set_text('CPU')
+            index = 0
         elif "RAM" in key:
-            self.ax1[0, 1].clear()
-            self.ax1[0, 1].pie([value, 100-value], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-            self.ax1[0, 1].title.set_text('RAM')
+            index = 1
         elif "DISK" in key:
-            self.ax1[1, 0].clear()
-            self.ax1[1, 0].pie([value, 100-value], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
-            self.ax1[1, 0].title.set_text('DISK')
-        # re-drawing the figure
-        self.fig1.canvas.draw()
-        # to flush the GUI events
-        self.fig1.canvas.flush_events()
+            index = 2
+        else:
+            return
+        
+        ax = self.axes[index]
+        ax.clear()
+        ax.pie([value, 100-value], explode=(0.1, 0), labels=self.labels, autopct='%1.1f%%', startangle=90)
+        ax.set_title(['CPU', 'RAM', 'DISK'][index])
 
-class Plot2():
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+class Plot():
     """
         Class for initializing a figure with 4 plots (for 4 resources which can be changed later)
+        Each plot has 2 lines. Blue represents the actual usage of the resource while red represents the predicted usage.
 
         Args:
             n (int): the range of all the plots, only the last n data points will be shown
     """
-    def __init__(self, n=5):
+    def __init__(self, n=10):
         plt.ion()
         self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 10))
         self.fig.subplots_adjust(left=0.2, wspace=0.6, hspace=0.6)
@@ -82,7 +79,8 @@ class Plot2():
 
             Args:
                 key (str): the resource associated with the plot (CPU, RAM or DISK for now)
-                value (float): the new value of the resource
+                value (float): how much of that resource is being used
+                predicted_value (float): how much of that resource our model predicts we would use
         """
         ax, data, predicted_data = self.plots[key]
 
@@ -116,9 +114,9 @@ def load_model():
 def main():
     run_time = 0
     consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
-    #plot_real = Plot()
-    #plot_predicted = Plot()
-    plot = Plot2()
+    #plot_real = Pie_Plot()
+    #plot_predicted = Pie_Plot()
+    plot = Plot()
 
     data_base = database.Database()
     model = load_model()

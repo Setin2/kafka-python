@@ -75,6 +75,7 @@ def main():
         grouped = df.groupby(['service', 'resource'])
         #get_expected_resource_usage_for_all_pairs(grouped, data_base)
         get_expected_resource_usage_for_sepcific_pair(df, data_base, "service1", "CPU")
+    data_base.close_connection()
 
 if __name__ == '__main__':
     main()
