@@ -1,4 +1,5 @@
 import torch
+import time
 import network
 import database
 import numpy as np
@@ -52,6 +53,54 @@ class Plot():
         # to flush the GUI events
         self.fig1.canvas.flush_events()
 
+class Plot2():
+    """
+        Class for initializing a figure with 4 plots (for 4 resources which can be changed later)
+
+        Args:
+            n (int): the range of all the plots, only the last n data points will be shown
+    """
+    def __init__(self, n=5):
+        plt.ion()
+        self.fig, ((self.ax1, self.ax2), (self.ax3, self.ax4)) = plt.subplots(2, 2, figsize=(12, 10))
+        self.fig.subplots_adjust(left=0.2, wspace=0.6, hspace=0.6)
+        self.ax1.set_title('CPU')
+        self.ax2.set_title('RAM')
+        self.ax3.set_title('DISK')
+
+        self.plots = {
+            "CPU": (self.ax1, [], []),
+            "RAM": (self.ax2, [], []),
+            "DISK": (self.ax3, [], []),
+        }
+
+        self.n = n
+
+    def update(self, key, value, predicted_value):
+        """
+            Update one of the 4 plots
+
+            Args:
+                key (str): the resource associated with the plot (CPU, RAM or DISK for now)
+                value (float): the new value of the resource
+        """
+        ax, data, predicted_data = self.plots[key]
+
+        data.append(value)
+        predicted_data.append(predicted_value)
+
+        ax.clear()
+        ax.plot(data[-self.n:], color="blue")
+        ax.plot(predicted_data[-self.n:], color="red")
+
+        self.ax1.set_title('CPU')
+        self.ax2.set_title('RAM')
+        self.ax3.set_title('DISK')
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        plt.show()
+
 def load_model():
     """
         Load the model we (hopefully) previously trained
@@ -67,8 +116,10 @@ def load_model():
 def main():
     run_time = 0
     consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
-    plot_real = Plot()
-    plot_predicted = Plot()
+    #plot_real = Plot()
+    #plot_predicted = Plot()
+    plot = Plot2()
+
     data_base = database.Database()
     model = load_model()
     try:
@@ -78,7 +129,7 @@ def main():
             image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
-            data_base.insert_metric(image_ID, service, resource, value)
+            #data_base.insert_metric(image_ID, service, resource, value)
 
             # get the expected usage given our model
             # in the future, we need a way to automatically get the service group for the current task and the run_time
@@ -90,8 +141,9 @@ def main():
             prediction = np.asarray(prediction)[0]
 
             # visualize the actual and the predicted resource usage for this service-resource pair
-            plot_real.update(resource, float(value))
-            plot_predicted.update(resource, prediction)
+            #plot_real.update(resource, float(value))
+            #plot_predicted.update(resource, prediction)
+            plot.update(resource, float(value), prediction)
 
             # consume earliest available messages, don't commit offsets
             KafkaConsumer(auto_offset_reset='earliest', enable_auto_commit=False)
