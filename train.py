@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 
 def train(model, optimizer, tasks):
     """
-        We train by task group since then its easier to get the list of unique services for the task
-        We dont feed batches to the network but we need to keep track of how many forward passes we made
+        Train by task group since then its easier to get the list of unique services for the task
+        Dont feed batches to the network but keep track of how many forward passes we made
         Otherwise, when we move to the next task group, we start again from index 0, but the indices of the dataframes do not go back to 0
     
         Args:
-            model (network.ServiceValuePredictor object): the model we wish to train
-            optimizer (torch.optim object): the optimizer of our model
+            model (network.ServiceValuePredictor Object): the model we wish to train
+            optimizer (torch.optim Object): the optimizer of our model
             tasks ([DataFrame]): list of DataFrames where each DataFrame is a group of rows from the database for each task
         
         Returns:
@@ -61,12 +61,13 @@ def save_model(model, optimizer):
     }, "model_weights.pth")
 
 def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
-    # Create a pandas dataframe from all the data we acumulated
+    # create a pandas dataframe from all the data we acumulated
     data_base = database.Database()
     data = data_base.get_historical_data("metrics")
     data_base.close_connection()
     df = pd.DataFrame(data, columns=['taskID', 'serviceID', 'resourceID', 'value', 'timestamp'])
 
+    # create and load the model
     model = network.ServiceValuePredictor(input_size=1)
     optimizer = Adam(model.parameters(), lr=LR)
     if load_model: model.load_model(optimizer, train=True)
@@ -84,6 +85,7 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
         loss = train(model, optimizer, tasks)
         loss_list.append(loss)
 
+    """ just to make sure
     test_inputs = [20, 10, 30] + [20] + [20] + [20] # should be between 80 - 85
     test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
     prediction = model(test_inputs)
@@ -93,6 +95,7 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
     prediction = model(test_inputs)
     print(prediction)
+    """
 
     print("final loss: ", loss_list[len(loss_list) - 1])
     plot_loss(ax, loss_list)

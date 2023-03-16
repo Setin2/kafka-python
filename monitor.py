@@ -9,7 +9,7 @@ from matplotlib.pyplot import plot, draw, show, ion
 
 class Plot():
     """
-        Class for initializing a figure with 4 plots (for 4 resources whcih can be changed later)
+        Class for initializing a figure with 4 plots (for 4 resources which can be changed later)
     """
     def __init__(self):
         self.labels = ['Used', 'Available']
@@ -32,7 +32,7 @@ class Plot():
             Update one of the 4 plots
 
             Args:
-                key (str): the resource associated with the plot
+                key (str): the resource associated with the plot (CPU, RAM or DISK for now)
                 value (float): the new value of the resource
         """
         if "CPU" in key:
@@ -68,18 +68,19 @@ def main():
     run_time = 0
     consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
     plot_real = Plot()
-    plot_updated = Plot()
+    plot_predicted = Plot()
     data_base = database.Database()
     model = load_model()
     try:
         for message in consumer:
             run_time += 1
+            # read the message from the kafka producer
             image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
             data_base.insert_metric(image_ID, service, resource, value)
 
-            # get the expected usage given our model and plot it
+            # get the expected usage given our model
             # in the future, we need a way to automatically get the service group for the current task and the run_time
             serviceID = data_base.get_ID_from_name(0, service)
             resourceID = data_base.get_ID_from_name(1, resource)
@@ -90,11 +91,11 @@ def main():
 
             # visualize the actual and the predicted resource usage for this service-resource pair
             plot_real.update(resource, float(value))
-            plot_updated.update(resource, prediction)
+            plot_predicted.update(resource, prediction)
 
             # consume earliest available messages, don't commit offsets
             KafkaConsumer(auto_offset_reset='earliest', enable_auto_commit=False)
-            # StopIteration if no message after 1sec
+            # stopIteration if no message after 1sec
             KafkaConsumer(consumer_timeout_ms=1000)
     except KeyboardInterrupt:
         print("Stopped reading data")

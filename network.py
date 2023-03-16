@@ -8,8 +8,8 @@ class ServiceValuePredictor(nn.Module):
 
         Args:
             input_size (int): size of the input at each time step
-            hidden_size (int): number of hidden units, 128 by default
-            num_layers (int): number of layers, 2 by default
+            hidden_size (int): number of LSTM hidden units, 128 by default
+            num_layers (int): number of LSTM layers, 2 by default
             batch_first (bool): ensure that the input tensor has shape (batch_size, seq_len, input_size)
 
         Returns:

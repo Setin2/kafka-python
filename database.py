@@ -55,8 +55,8 @@ class Database():
         )
     
     def get_ID_from_name(self, type, name):
-        """        
-            Get the ID of a service/resource given its name
+        """
+            Get the ID of a service/resource given its name. If the name is not the in the lookup tables, we make a new entry for it.
 
             Args:
                 type (int): 0 for service, 1 for resource
@@ -107,7 +107,7 @@ class Database():
 
     def insert_metric(self, taskID, service_name, resource_name, value, ts=None):
         """        
-            Insert a row in the given table
+            Insert a row in the table metrics
 
             Args:
                 taskID (int): ID of the task

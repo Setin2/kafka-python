@@ -22,7 +22,7 @@ spec:
             name: service1-config
       - name: resource-monitor
         image: resource-monitor:latest
-        command: ["python", "/app/resource-monitor/resource_monitor.py", "service1"]
+        command: ["python", "/app/producer/producer.py", "service1"]
         envFrom:
         - configMapRef:
             name: service1-config
