@@ -116,7 +116,7 @@ def main():
     consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
     #plot_real = Pie_Plot()
     #plot_predicted = Pie_Plot()
-    plot = Plot()
+    #plot = Plot()
 
     data_base = database.Database()
     model = load_model()
@@ -141,7 +141,7 @@ def main():
             # visualize the actual and the predicted resource usage for this service-resource pair
             #plot_real.update(resource, float(value))
             #plot_predicted.update(resource, prediction)
-            plot.update(resource, float(value), prediction)
+            #plot.update(resource, float(value), prediction)
 
             # consume earliest available messages, don't commit offsets
             KafkaConsumer(auto_offset_reset='earliest', enable_auto_commit=False)
