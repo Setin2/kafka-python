@@ -13,16 +13,20 @@ The database table has the following format: ``` (taskID, serviceID, resourceID,
 The database also includes 2 lookup tables for the service/resource ID-name pairs: ``` (ID, name) ```
 We need to save the service & resoruce as numerical values in the main table because we need to feed them into a neural net.
 
-## Producer
+## Orchestrator
 
-For now, producers have to be started manually for each service using the command ``` python producer/producer.py service_name task_ID ```.
-Here, service_name is the name of the service currently running, and task_ID is the ID for the current task to which a list of services are applied.
+The file ``` order.JSON ``` contains the list of services that need to be applied to an image, and an ID of the order.
+The JSON file is read by ``` orchestrator/orchestrator.py ```, which starts all the services in order, as well as a service that monitors their resource consumption.
 
-## Consumer
+## Monitor Producer
 
-To start a consumer, run the command ``` python monitor.py ```. The consumer will read the messages from the producer, and visualize the resource consumption of the given service using matplotlib.pyplot. The data from the producer is also stored in in timeseriesDB on the postgreSQL server.
+The file ``` monitor-producer/monitor-producer.py ``` is used by the orchestrator to spin up a producer for each service. The script requires the name of the service and the ID of the current order, which are provided automatically by the orchestrator.
+
+## Monitoring
+
+Before running the orchestrator, run the command ``` python monitor.py ```. It will start a consumer which will read the messages from the producers made for each service by the orchestrator. It will visualize the resource consumption of the given service using matplotlib.pyplot. The data from the producer is also stored in in timeseriesDB on the postgreSQL server.
 This file also loads in our model, and predicts the expected resource consumption given the data read by the consumer. So we can visualise the real resource usage, and the predicted usage at the same time.
-For now, we have to specify manually the resource group and how many seconds we are in the task. Later this has to be done automatically. 
+For now, we have to specify manually how many seconds we are in the task. Later this has to be done automatically. 
 
 ## Expected resource usage
 
@@ -38,4 +42,4 @@ The weights of the network and its optimizer can be saved in a ``` model_weights
 
 The file ``` read_data.py ``` is simply a test file used to drop tables and read data using various function from ``` database.py ```.
 
-Each example service has a folder with a dockerfile and kubernetes deployment files in it. Images can be build and run for the 2 services, but the kubernetes deployment files are not correctly configured yet. Thus, monitoring is done manually for now.
+Each example service has a folder with a dockerfile and kubernetes deployment files in it. Images can be build and run for the 2 services, but the kubernetes deployment files are not correctly configured yet.

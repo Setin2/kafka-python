@@ -23,7 +23,7 @@ cur_idx = 0
 try:
     for service in data['required_services']:
         # start the monitoring the service resource consumption producer
-        monitoring_service = subprocess.Popen('python ./producer/producer.py {service} {taskID}'.format(service=service, taskID=data['taskID']))
+        monitoring_service = subprocess.Popen('python ./monitor-producer/monitor-producer.py {service} {taskID}'.format(service=service, taskID=data['taskID']))
 
         # start the next service in line
         subprocess.Popen('python ./{service}/{service}.py'.format(service=service))

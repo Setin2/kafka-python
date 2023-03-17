@@ -1,4 +1,5 @@
 import torch
+import json
 import network
 import database
 import numpy as np
@@ -123,17 +124,25 @@ def main():
     try:
         for message in consumer:
             run_time += 1
+
+            # get the list of services we are applying to this order
+            with open('./order.JSON') as file: 
+                data = json.load(file) # its a dictionary, like data['taskID']
+            services = data['required_services']
+
             # read the message from the kafka producer
             image_ID, service, resource = message.key.decode("utf-8").split(" ")
             value = message.value.decode("utf-8")
 
-            #data_base.insert_metric(image_ID, service, resource, value)
+            data_base.insert_metric(image_ID, service, resource, value)
 
             # get the expected usage given our model
-            # in the future, we need a way to automatically get the service group for the current task and the run_time
+            # first we have to translate all the services/resources names to IDs
             serviceID = data_base.get_ID_from_name(0, service)
             resourceID = data_base.get_ID_from_name(1, resource)
-            inputs = [20, 10, 30] + [serviceID] + [resourceID] + [run_time]
+            for i, service in enumerate(services):
+                services[i] = data_base.get_ID_from_name(0, service)
+            inputs = services + [serviceID] + [resourceID] + [run_time]
             inputs = torch.tensor(inputs, dtype=torch.float32)
             prediction = model(inputs).data
             prediction = np.asarray(prediction)[0]
