@@ -89,12 +89,15 @@ if __name__ == '__main__':
     taskID = sys.argv[2]
 
     while True:
-        cpu_usage = get_cpu_usage()
-        mem_usage = get_memory_usage()
-        disk_usage = get_disk_usage()
-        producer.send("resources", taskID + " " + service + " CPU", str(cpu_usage))
-        producer.send("resources", taskID + " " +  service + " RAM", str(mem_usage))
-        producer.send("resources", taskID + " " +  service + " DISK", str(disk_usage))
+        try:
+            cpu_usage = get_cpu_usage()
+            mem_usage = get_memory_usage()
+            disk_usage = get_disk_usage()
+            producer.send("resources", taskID + " " + service + " CPU", str(cpu_usage))
+            producer.send("resources", taskID + " " +  service + " RAM", str(mem_usage))
+            producer.send("resources", taskID + " " +  service + " DISK", str(disk_usage))
 
-        # Wait for 1 second before collecting and sending next data point
-        time.sleep(1)
+            # Wait for 1 second before collecting and sending next data point
+            time.sleep(1)
+        except KeyboardInterrupt:
+            print("Stopped reading resource consumption.")

@@ -1,8 +1,13 @@
 import time
+import sys
+sys.path.append('../')
+import producer
 
 x = 0
 
-for i in range(100000):
-    time.sleep(1)
-    for j in range (10000):
-        x += i
+time.sleep(20)
+
+print("hello from service1")
+
+producer = producer.Producer()
+producer.send("orchestrator", "message", "done")
