@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 def train(model, optimizer, tasks):
     """
         Train by task group since then its easier to get the list of unique services for the task
-        Dont feed batches to the network but keep track of how many forward passes we made
-        Otherwise, when we move to the next task group, we start again from index 0, but the indices of the dataframes do not go back to 0
+        Dont feed batches to the network
     
         Args:
             model (network.ServiceValuePredictor Object): the model we wish to train
@@ -18,21 +17,20 @@ def train(model, optimizer, tasks):
             tasks ([DataFrame]): list of DataFrames where each DataFrame is a group of rows from the database for each task
         
         Returns:
-            float: the mean loss for this epoch
+            float: the cumulative loss for this epoch
     """
     cum_loss = 0
-    task_group_cur_index = 0
     task_group_start_index = 0
     for task_group in tasks:
         # keep track of the start index of this start group because we need it to compute the run-time
-        task_group_start_index = task_group_cur_index
+        task_group_start_index = task_group.index[0].tolist()
         unique_services = list(task_group['serviceID'].unique())
         # for each row in the task group
-        for _ in range(len(task_group)):
-            run_time = (task_group['timestamp'][task_group_cur_index] - task_group['timestamp'][task_group_start_index]).total_seconds()
-            current_service = task_group['serviceID'][task_group_cur_index]
-            current_resource = task_group['resourceID'][task_group_cur_index]
-            current_value = torch.tensor([task_group['value'][task_group_cur_index]], dtype=torch.float32)
+        for i in task_group.index.tolist():
+            run_time = (task_group['timestamp'][i] - task_group['timestamp'][task_group_start_index]).total_seconds()
+            current_service = task_group['serviceID'][i]
+            current_resource = task_group['resourceID'][i]
+            current_value = torch.tensor([task_group['value'][i]], dtype=torch.float32)
 
             # we feed the network the current service-resource pair, how much time went since we started the task (in seconds), 
             # and a list of all the unique services that are run in this task 
@@ -47,8 +45,7 @@ def train(model, optimizer, tasks):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            task_group_cur_index += 1
-    return cum_loss / task_group_cur_index
+    return cum_loss
 
 def plot_loss(ax, loss_list):
     ax.plot(loss_list)
@@ -83,19 +80,7 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
 
     for epoch in range(EPOCHS):
         loss = train(model, optimizer, tasks)
-        loss_list.append(loss)
-
-    """ just to make sure
-    test_inputs = [20, 10, 30] + [20] + [20] + [20] # should be between 80 - 85
-    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
-    prediction = model(test_inputs)
-    print(prediction)
-
-    test_inputs = [20, 10, 30] + [10] + [10] + [20] # should be around 20
-    test_inputs = torch.tensor(test_inputs, dtype=torch.float32)
-    prediction = model(test_inputs)
-    print(prediction)
-    """
+        loss_list.append(loss/len(data))
 
     print("final loss: ", loss_list[len(loss_list) - 1])
     plot_loss(ax, loss_list)
@@ -103,4 +88,4 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     if savemodel: save_model(model, optimizer)
 
 if __name__ == '__main__':
-    main(EPOCHS=2, LR=0.001, load_model=False, savemodel=False, savefig=False)
+    main(EPOCHS=200, LR=0.001, load_model=True, savemodel=True, savefig=True)

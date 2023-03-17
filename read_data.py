@@ -9,7 +9,7 @@ def read():
     #rows = data_base.get_data("service1", "CPU")
     #rows = data_base.get_data_for_next_x_hours(1, 5)
     #rows = data_base.get_data_by_service_group(("service1", "service2"))
-    #data_base.delete_row("metrics", "resourceID", 0)
+    #data_base.delete_row("metrics", "taskID", 7)
     rows = data_base.get_historical_data("metrics")
 
     for row in rows:

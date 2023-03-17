@@ -243,6 +243,13 @@ class Database():
         self.connection.commit()
         print(f"All rows where {row}={value} have been deleted")
     
+    def get_start_time_for_task(self, taskID):
+        self.cursor.execute(f"SELECT timestamp FROM metrics WHERE taskID={taskID} LIMIT 1")
+        start_time = self.cursor.fetchone()
+        if not start_time:
+            start_time = (datetime.datetime.utcnow().replace(microsecond=0), )
+        return start_time
+    
     def close_connection(self):
         """
             Connection to the server needs to be closed
