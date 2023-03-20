@@ -32,7 +32,7 @@ def train(model, optimizer, tasks):
             current_resource = task_group['resourceID'][i]
             current_value = torch.tensor([task_group['value'][i]], dtype=torch.float32)
 
-            # we feed the network the current service-resource pair, how much time went since we started the task (in seconds), 
+            # inputs = current service-resource pair, how much time went since we started the task (in seconds), 
             # and a list of all the unique services that are run in this task 
             inputs = unique_services + [current_service] + [current_resource] + [run_time]
             inputs = torch.tensor(inputs, dtype=torch.float32)

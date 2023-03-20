@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service1
+  name: service3
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: service1
+      app: service3
   template:
     metadata:
       labels:
-        app: service1
+        app: service3
     spec:
       containers:
-      - name: service1
-        image: service1:latest # specify the local Docker image
+      - name: service3
+        image: service3:latest # specify the local Docker image
         env:
         - name: SERVICE_NAME
-          value: "service1"
+          value: "service3"
         - name: KAFKA_TOPIC
           value: "resources"
         - name: KAFKA_BOOTSTRAP_SERVERS
