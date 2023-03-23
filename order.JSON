@@ -1,5 +1,5 @@
 {
     "taskID": "4",
-    "required_services": ["service2", "service1", "service3"],
+    "required_services": ["service2"],
     "completed_services":[]
 }

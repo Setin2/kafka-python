@@ -2,21 +2,16 @@ import sys
 import json
 import psutil
 import time
-import producer
 import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
-
-# kubernetes stuff, not relevant for now
-KAFKA_TOPIC = 'resource-monitor'
-KAFKA_BOOTSTRAP_SERVERS = 'kafka-broker:9092'
 
 class Producer:
     """
         Constructor for a kafka producer
     """
-    def __init__(self):
-        self.producer = KafkaProducer()
+    def __init__(self, kafka_bootstrap_servers):
+        self.producer = KafkaProducer(bootstrap_servers="broker:9092")
 
     def on_send_success(self, record_metadata):
         """
@@ -82,12 +77,11 @@ def get_disk_usage():
     return disk_percent
 
 if __name__ == '__main__':
-    #producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
-    producer = Producer()
-
-    # these should be collected automatically in the future
     service = sys.argv[1]
     taskID = sys.argv[2]
+    kafka_bootstrap_servers = "localhost:9092"
+
+    producer = Producer(kafka_bootstrap_servers)
 
     while True:
         try:

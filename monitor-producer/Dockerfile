@@ -2,8 +2,8 @@ FROM python:3.8
  
 WORKDIR /app
 COPY . /app
- 
-#RUN pip install -r requirements.txt
- 
-ENTRYPOINT ["python"]
-CMD ["producer.py"]
+
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+ENTRYPOINT ["python", "monitor-producer.py"]
+CMD []
