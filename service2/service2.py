@@ -1,3 +1,4 @@
+import os
 import time
 import sys
 from kafka import KafkaProducer
@@ -42,10 +43,13 @@ class Producer:
         # block until all async messages are sent
         self.producer.flush()
 
-kafka_bootstrap_servers = "broker:9092"
+kafka_bootstrap_servers = "kafka-broker:9092"
+topic_name = "services"
 
-producer = Producer("services", kafka_bootstrap_servers=kafka_bootstrap_servers)
-producer.send(sys.argv[1], sys.argv[2])
+producer = Producer(topic_name, kafka_bootstrap_servers)
+service_name = sys.argv[1]
+task_ID = sys.argv[2]
+producer.send(service_name, task_ID)
 
 time.sleep(4)
 

@@ -43,7 +43,8 @@ class Producer:
         # block until all async messages are sent
         self.producer.flush()
 
-kafka_bootstrap_servers = "kafka-broker:9092"
+kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+#kafka_bootstrap_servers = "kafka-broker:9092"
 topic_name = "services"
 
 producer = Producer(topic_name, kafka_bootstrap_servers)

@@ -1,10 +1,10 @@
 import torch
 import json
-import network
+#import network
 import database
 import datetime
 import numpy as np
-from torch.optim import Adam
+#from torch.optim import Adam
 from kafka import KafkaConsumer
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, draw, show, ion
@@ -101,17 +101,17 @@ class Plot():
         self.fig.canvas.flush_events()
         plt.show()
 
-def load_model():
-    """
-        Load the model we (hopefully) previously trained
-
-        Returns:
-            network.ServiceValuePredictor: the trained model in evaluation mode
-    """
-    model = network.ServiceValuePredictor(input_size=1)
-    optimizer = Adam(model.parameters(), lr=0.001)
-    model.load_model(optimizer)
-    return model
+#def load_model():
+#    """
+#        Load the model we (hopefully) previously trained
+#
+#        Returns:
+#            network.ServiceValuePredictor: the trained model in evaluation mode
+#    """
+#    model = network.ServiceValuePredictor(input_size=1)
+#    optimizer = Adam(model.parameters(), lr=0.001)
+#    model.load_model(optimizer)
+#    return model
 
 def main():
     run_time = 0

@@ -196,7 +196,7 @@ def create_job(service_name, args=[]):
                         command=["python", f"{service_name}.py"] + args,
                         ports=[client.V1ContainerPort(name="kafka-python", container_port=9092)],
                         env=[
-                            client.V1EnvVar(name="KAFKA_BOOTSTRAP_SERVERS", value="broker:9092"),
+                            client.V1EnvVar(name="KAFKA_BOOTSTRAP_SERVERS", value="kafka-broker:9092"),
                             client.V1EnvVar(name="KAFKA_ZOOKEEPER_CONNECT", value="zookeeper:2181"),
                             client.V1EnvVar(name="POSTGRES_HOST", value="db:5432"),
                             client.V1EnvVar(name="POSTGRES_USER", value="postgres"),
@@ -269,14 +269,15 @@ def delete(service):
 with open("order.json", "r") as tasks_file:
     tasks = json.load(tasks_file)
 
-#monitor_producer_job = create_job("monitor-producer", [service_name, tasks["taskID"]])
+#monitor_producer_job = create_job("monitor-producer")
+#time.sleep(6)
 
 # Start the required services in the order specified, a monitoring producer for each job
 for service_name in tasks["required_services"]:
     service_job = create_job(service_name, [service_name, tasks["taskID"]])
     wait_for_job_completion(service_name)
 
-#batch_v1.delete_namespaced_job(name="monitor-producer", namespace=namespace, body=client.V1DeleteOptions())"""
+#batch_v1.delete_namespaced_job(name="monitor-producer", namespace=namespace, body=client.V1DeleteOptions())
 
 """
 to run the docker compose and the kubernetes cluster on the same server:

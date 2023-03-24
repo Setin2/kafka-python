@@ -1,0 +1,5 @@
+kafka_python==2.0.2
+matplotlib==3.7.1
+numpy==1.24.1
+psycopg2==2.9.5
+#torch==1.13.1
