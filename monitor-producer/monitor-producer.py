@@ -4,14 +4,16 @@ import psutil
 import time
 import datetime
 from kafka import KafkaProducer
+from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 
 class Producer:
     """
         Constructor for a kafka producer
     """
-    def __init__(self, kafka_bootstrap_servers):
-        self.producer = KafkaProducer(bootstrap_servers="broker:9092")
+    def __init__(self, topic, kafka_bootstrap_servers):
+        self.producer = KafkaProducer(bootstrap_servers=kafka_bootstrap_servers)
+        self.topic = topic
 
     def on_send_success(self, record_metadata):
         """
@@ -27,21 +29,20 @@ class Producer:
         """
         log.error('I am an errback', exc_info=excp)
 
-    def send(self, topic, key, value, allow_callback=False):
+    def send(self, key, value, allow_callback=False):
         """
             Method for sending a message
 
             Args:
-                topic (str): topic of our message
                 key (str): the key of our message, genereally the taskID, the name of the service, 
                         the name of the resource separated by blank space
                 value (float): the value of our message (resource consumption)
                 allow_callback (bool): True if we want callbacks from our messages, False otherwise and by default
         """
         if allow_callback:
-            self.producer.send(topic, bytes(value, 'utf-8'), bytes(key, 'utf-8')).add_callback(self.on_send_success).add_errback(self.on_send_error)
+            self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8')).add_callback(self.on_send_success).add_errback(self.on_send_error)
         else:
-            self.producer.send(topic, bytes(value, 'utf-8'), bytes(key, 'utf-8'))
+            self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8'))
 
         # block until all async messages are sent
         self.producer.flush()
@@ -76,23 +77,34 @@ def get_disk_usage():
     disk_percent = disk_stats.percent
     return disk_percent
 
+def send_metrics(message):
+    service = message.key.decode("utf-8").split(" ")
+    taskID = message.value.decode("utf-8")
+
+    cpu_usage = get_cpu_usage()
+    mem_usage = get_memory_usage()
+    disk_usage = get_disk_usage()
+    producer.send(taskID + " " + service + " CPU", str(cpu_usage))
+    producer.send(taskID + " " +  service + " RAM", str(mem_usage))
+    producer.send(taskID + " " +  service + " DISK", str(disk_usage))
+    time.sleep(1)
+
 if __name__ == '__main__':
-    service = sys.argv[1]
-    taskID = sys.argv[2]
-    kafka_bootstrap_servers = "localhost:9092"
+    kafka_bootstrap_servers = "kafka-broker:9092"
 
-    producer = Producer(kafka_bootstrap_servers)
+    producer = Producer("resources", kafka_bootstrap_servers)
+    consumer = KafkaConsumer("services", "my-group", bootstrap_servers=kafka_bootstrap_servers)
 
+    # the message from the current job we are monitoring
+    current_message = None
     while True:
-        try:
-            cpu_usage = get_cpu_usage()
-            mem_usage = get_memory_usage()
-            disk_usage = get_disk_usage()
-            producer.send("resources", taskID + " " + service + " CPU", str(cpu_usage))
-            producer.send("resources", taskID + " " +  service + " RAM", str(mem_usage))
-            producer.send("resources", taskID + " " +  service + " DISK", str(disk_usage))
+        # check to see if we started a new job
+        new_message = consumer.poll(1.0)
 
-            # Wait for 1 second before collecting and sending next data point
-            time.sleep(1)
-        except KeyboardInterrupt:
-            print("Stopped reading resource consumption.")
+        # if not, we send mettrics for current service
+        if not new_message:
+            send_metrics(current_message)
+        # else, we update the current service to this new one
+        else:
+            current_message = new_message
+            send_metrics(current_message)

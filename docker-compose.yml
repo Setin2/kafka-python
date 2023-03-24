@@ -50,5 +50,6 @@ volumes:
 networks:
   kafka-python:
     driver: bridge
+    name: kafka-python
 # to start: docker-compose up -d
 # to stop: docker-compose down

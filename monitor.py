@@ -118,7 +118,7 @@ def main():
     consumer = KafkaConsumer("resources", "my-group", bootstrap_servers=['localhost:9092'])
     #plot_real = Pie_Plot()
     #plot_predicted = Pie_Plot()
-    plot = Plot()
+    #plot = Plot()
 
     data_base = database.Database()
     model = load_model()
@@ -136,6 +136,7 @@ def main():
             value = message.value.decode("utf-8")
 
             #data_base.insert_metric(taskID, service, resource, value)
+            print(taskID, service, resource, value)
 
             # get for how long we have been running this task for in seconds
             start_time = data_base.get_start_time_for_task(taskID)[0]
@@ -155,7 +156,7 @@ def main():
             # visualize the actual and the predicted resource usage for this service-resource pair
             #plot_real.update(resource, float(value))
             #plot_predicted.update(resource, prediction)
-            plot.update(resource, float(value), prediction)
+            #plot.update(resource, float(value), prediction)
 
             # consume earliest available messages, don't commit offsets
             KafkaConsumer(auto_offset_reset='earliest', enable_auto_commit=False)
