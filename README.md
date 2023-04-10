@@ -2,31 +2,39 @@
 
 Monitor resource consumption for microservices using apache kafka, and allocate resources to the services in an optimal manner with the help of heuristics and ML.
 
-## Broker, Zookeeper & Database
-
-A kafka broker, zookeeper and a postgreSQL server can be initialized using the command ``` docker compose up -d ```
-
-## Database
-
-The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. 
-The database table has the following format: ``` (taskID, serviceID, resourceID, value, timestamp) ```
-The database also includes 2 lookup tables for the service/resource ID-name pairs: ``` (ID, name) ```
-We need to save the service & resoruce as numerical values in the main table because we need to feed them into a neural net.
-
 ## Orchestrator
 
 The file ``` order.JSON ``` contains the list of services that need to be applied to an image, and an ID of the order.
-The JSON file is read by ``` orchestrator/orchestrator.py ```, which starts all the services in order, as well as a service that monitors their resource consumption.
+The JSON file is read by ``` kubernetes_orc.py ```, which starts all the services in order, as well as the services used to monitor their resource consumption.
+
+## Broker, Zookeeper & Database
+
+A kafka broker, zookeeper and a postgreSQL server will be initialized by the kubernetes orchestartor script. The kafka bootstrap servers and database credidentials will be given to each service as environment variables. The files used by the kubernetes orchestrator to start the deployments, services, and jobs reside in ``` ./kubernetes_api ```
+
+## Services
+
+Each example service has a folder with a dockerfile a main script, and a list of requirements. 
+Images for the services can be build and pushed to docker hub using the bash file as follows ``` ./build_service.sh <image_name> ``` (an executable needs to be created for the file first ``` chmod +x build_service.sh ```).
+
+If the container is ran separetly from kubernetes for some reson, start it on specific network with: ``` docker run --network=kafka-python monitor-producer ```.
 
 ## Monitor Producer
 
-The file ``` monitor-producer/monitor-producer.py ``` is used by the orchestrator to spin up a producer for each service. The script requires the name of the service and the ID of the current order, which are provided automatically by the orchestrator.
+The ``` monitor-producer ``` is used by the orchestrator to spin up a consumer which listens to the services. If it gets a new message from some service, it will start producer which sends messages on a ``` resources ``` topic about the resource consumption of the last service that sent it a message. Messages are sent by the resource producer every 1 second.
+The orchestrator starts the monitor-producer job before starting any of the services, and finishes it once all the services in the orders file have been completed.
 
-## Monitoring
+## Monitor Consumer
 
-Before running the orchestrator, run the command ``` python monitor.py ```. It will start a consumer which will read the messages from the producers made for each service by the orchestrator. It will visualize the resource consumption of the given service using matplotlib.pyplot. The data from the producer is also stored in in timeseriesDB on the postgreSQL server.
-This file also loads in our model, and predicts the expected resource consumption given the data read by the consumer. So we can visualise the real resource usage, and the predicted usage at the same time.
-For now, we have to specify manually how many seconds we are in the task. Later this has to be done automatically. 
+Before running the monitor producer, the orchestrator will start a consumer which will read the messages from its producer.
+
+The monitor consumer service will visualize the resource consumption of the given service using matplotlib.pyplot. 
+The data from the producer is also stored in timeseriesDB on the postgreSQL server.
+
+## Database
+
+The shared file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. The database table has the following format: ``` (taskID, serviceID, resourceID, value, timestamp) ```
+The database also includes 2 lookup tables for the service/resource ID-name pairs: ``` (ID, name) ```
+We need to save the service & resource as numerical values in the main table because we need to feed them into a neural net.
 
 ## Expected resource usage
 
@@ -38,8 +46,11 @@ The file ``` train.py ``` is used to train a neural network (its code can be see
 
 The weights of the network and its optimizer can be saved in a ``` model_weights.pth ``` file. The loss during training can also saved in a ``` loss.png ``` file.
 
-## Misc
 
-The file ``` read_data.py ``` is simply a test file used to drop tables and read data using various function from ``` database.py ```.
 
-Each example service has a folder with a dockerfile and kubernetes deployment files in it. Images can be build and run for the 2 services, but the kubernetes deployment files are not correctly configured yet.
+
+
+kubectl create serviceaccount orchestrator
+
+kubectl apply -f orchestrator/role.yaml
+

@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import psutil
@@ -78,36 +79,43 @@ def get_disk_usage():
     return disk_percent
 
 def send_metrics(message):
-    service = message.key.decode("utf-8")
+    global stop_monitoring
     taskID = message.value.decode("utf-8")
 
-    cpu_usage = get_cpu_usage()
-    mem_usage = get_memory_usage()
-    disk_usage = get_disk_usage()
-    print(taskID + " " + service + " CPU", str(cpu_usage), flush=True)
-    producer.send(taskID + " " + service + " CPU", str(cpu_usage))
-    producer.send(taskID + " " +  service + " RAM", str(mem_usage))
-    producer.send(taskID + " " +  service + " DISK", str(disk_usage))
+    if "TERMINATE" in taskID:
+        producer.send("TERMINATE", "TERMINATE")
+    elif "STOP" in taskID:
+        stop_monitoring = True
+    else:
+        service_list, service = message.key.decode("utf-8").split(":")
+        cpu_usage = get_cpu_usage()
+        mem_usage = get_memory_usage()
+        disk_usage = get_disk_usage()
+        print(service_list + " " + taskID + " " + service + ":CPU", str(cpu_usage), flush=True)
+        producer.send(service_list + ":" + taskID + ":" + service + ":CPU", str(cpu_usage))
+        producer.send(service_list + ":" + taskID + ":" +  service + ":RAM", str(mem_usage))
+        producer.send(service_list + ":" + taskID + ":" +  service + ":DISK", str(disk_usage))
 
-#sys.stdout = open('/app/output.txt', 'w')
-kafka_bootstrap_servers = "kafka-broker:9092"
-
+kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer("resources", kafka_bootstrap_servers)
-consumer = KafkaConsumer("services", "my-group", bootstrap_servers=kafka_bootstrap_servers)
+consumer = KafkaConsumer("services", "services_group", bootstrap_servers=kafka_bootstrap_servers)
 
 # the message from the current job we are monitoring
 current_message = None
-while True:
-    # check to see if we started a new job
-    new_message = consumer.poll(1.0)
-
+stop_monitoring = False
+while not stop_monitoring:
+    # check to see if we got a new message
+    new_message = consumer.poll(0.1)
+    
     # if not, we send metrics for current service
     if not new_message and current_message is not None:
         send_metrics(current_message)
-    # else, we update the current service to this new one
+
+    # else, we check to see if we need to terminate monitoring, or update the current service to this new one
     elif new_message:
         # we need to loop thorugh the partition message
         for tp, messages in new_message.items():
             for message in messages:
                 current_message = message
-    time.sleep(1)
+                send_metrics(current_message)
+    time.sleep(0.5)

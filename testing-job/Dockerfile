@@ -9,5 +9,5 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY . /app
 
-ENTRYPOINT ["python", "monitor-consumer.py"]
+ENTRYPOINT ["python", "testing-job.py"]
 CMD []

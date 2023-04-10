@@ -1,3 +1,4 @@
+import os
 import torch
 import network
 import database
@@ -58,8 +59,13 @@ def save_model(model, optimizer):
     }, "model_weights.pth")
 
 def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
+    host, port = os.getenv("POSTGRES_HOST").split(":")
+    dbname = os.getenv("POSTGRES_NAME")
+    user = os.getenv("POSTGRES_USER")
+    password = os.getenv("POSTGRES_PASSWORD")
+    data_base = database.Database(host, port, dbname, user, password)
+
     # create a pandas dataframe from all the data we acumulated
-    data_base = database.Database()
     data = data_base.get_historical_data("metrics")
     data_base.close_connection()
     df = pd.DataFrame(data, columns=['taskID', 'serviceID', 'resourceID', 'value', 'timestamp'])
@@ -87,5 +93,5 @@ def main(EPOCHS, LR, load_model=True, savemodel=True, savefig=False):
     if savefig: plt.savefig('loss.png')
     if savemodel: save_model(model, optimizer)
 
-if __name__ == '__main__':
-    main(EPOCHS=200, LR=0.001, load_model=True, savemodel=True, savefig=True)
+#if __name__ == '__main__':
+#    main(EPOCHS=200, LR=0.001, load_model=True, savemodel=True, savefig=True)
