@@ -1,5 +1,6 @@
 from kubernetes import client, config, watch
 import json
+import uuid
 import time
 
 # Dont know, some things we need to do stuff
@@ -21,11 +22,14 @@ def create_job(service_name, args=[]):
         Returns:
             kubernetes.client.BatchV1Api.V1Job: the kubernetes job
     """
+    # Generate a unique name for the job using a combination of service_name, timestamp, and random UUID
+    job_name = f"{service_name}-{int(time.time())}-{str(uuid.uuid4())[:8]}"
+
     # Define the YAML for the job
     job = client.V1Job()
     job.api_version = "batch/v1"
     job.kind = "Job"
-    job.metadata = client.V1ObjectMeta(name=service_name)
+    job.metadata = client.V1ObjectMeta(name=job_name)
     job.spec = client.V1JobSpec(
         completions=1,
         ttl_seconds_after_finished=1,  # Automatically delete the job after 1 second
@@ -59,30 +63,38 @@ def create_job(service_name, args=[]):
     return batch_v1.create_namespaced_job(namespace=namespace, body=job)
 
 def wait_for_job_completion(service_name):
-    """
-        Read the events for a service with the given name and wait for a success or failure event to terminate its corresponding monitoring service.
-
-        Args:
-            service_name (str): name of the service whose events we want to read
-    """
     print(f"Waiting for {service_name} to complete...")
     w = watch.Watch()
-    for event in w.stream(
-        batch_v1.list_namespaced_job,
-        namespace=namespace,
-        label_selector=f"job-name={service_name}",
-        timeout_seconds=0
-    ):
-        o = event["object"]
+    job_names = []
+    expected_completions = 0
 
-        if o.status.succeeded:
-            print("Job finished succesfully")
+    # Define event handler function
+    def event_handler(event):
+        nonlocal expected_completions
+        job = event['object']
+        if job.metadata.name in job_names:
+            if job.status.conditions and any(condition.type == 'Complete' and condition.status == 'True' for condition in job.status.conditions):
+                job_names.remove(job.metadata.name)
+                expected_completions -= 1
+
+    # Start watching events
+    for event in w.stream(batch_v1.list_namespaced_job, namespace=namespace, label_selector=f"app={service_name}"):
+        if event['type'] == 'ADDED':
+            job = event['object']
+            if job.metadata.name not in job_names and job.status.active and not job.status.failed:
+                job_names.append(job.metadata.name)
+                expected_completions += 1
+        elif event['type'] == 'DELETED':
+            job = event['object']
+            if job.metadata.name in job_names:
+                job_names.remove(job.metadata.name)
+                expected_completions -= 1
+        if expected_completions == 0:
+            # All job instances have completed
+            print(f"All jobs with {service_name} completed")
             w.stop()
             return
 
-        if not o.status.active and o.status.failed:
-            w.stop()
-            raise Exception("Job Failed")
 
 def delete_pod_and_job(job_name):
     batch_v1.delete_namespaced_job(name=job_name, namespace=namespace, body=client.V1DeleteOptions(propagation_policy="Background"))

@@ -1,1 +1,2 @@
+kafka_python==2.0.2
 kubernetes==26.1.0

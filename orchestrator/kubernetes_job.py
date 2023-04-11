@@ -1,5 +1,6 @@
 from kubernetes import client, config, watch
 import json
+import uuid
 import time
 
 # Dont know, some things we need to do stuff
@@ -93,20 +94,22 @@ def delete_pod_and_job(job_name):
     print(f"Deleting {job_name}...")
 
 # Delete the deployment with service
-def delete_deployment_and_service(service):
-    deployment_name = service
-    api_instance = client.AppsV1Api()
-    api_instance.delete_namespaced_deployment(
-        name=deployment_name,
-        namespace=namespace,
-        body=client.V1DeleteOptions(),
-    )
-
-    # Delete the service
-    service_name = service
-    api_instance = client.CoreV1Api()
-    api_instance.delete_namespaced_service(
-        name=service_name,
-        namespace=namespace,
-        body=client.V1DeleteOptions(),
-    )
+def delete_deployment_and_service(service, delete_deployment, delete_service):
+    if delete_deployment:
+        deployment_name = service
+        api_instance = client.AppsV1Api()
+        api_instance.delete_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace,
+            body=client.V1DeleteOptions(),
+        )
+    
+    if delete_service:
+        # Delete the service
+        service_name = service
+        api_instance = client.CoreV1Api()
+        api_instance.delete_namespaced_service(
+            name=service_name,
+            namespace=namespace,
+            body=client.V1DeleteOptions(),
+        )

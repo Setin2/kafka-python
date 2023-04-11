@@ -83,8 +83,10 @@ def send_metrics(message):
     taskID = message.value.decode("utf-8")
 
     if "TERMINATE" in taskID:
+        print("terminate", flush=True)
         producer.send("TERMINATE", "TERMINATE")
     elif "STOP" in taskID:
+        print("stop", flush=True)
         stop_monitoring = True
     else:
         service_list, service = message.key.decode("utf-8").split(":")
