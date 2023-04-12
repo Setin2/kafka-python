@@ -1,5 +1,5 @@
 {
     "orderID": "7",
-    "required_services": ["service1", "service2", "service3"],
-    "completed_services":[]
+    "required_tasks": ["service1", "service2", "service3"],
+    "completed_tasks":[]
 }

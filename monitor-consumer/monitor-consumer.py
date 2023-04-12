@@ -1,6 +1,6 @@
-#import torch
 import os
 import json
+#import torch
 #import network
 import database
 import datetime
@@ -157,12 +157,31 @@ class Plot():
 #    model.load_model(optimizer)
 #    return model
 
+def get_expected_usage(data_base, tasks, task, resource):
+    # get the expected usage given our model
+    # first we have to translate all the tasks/resources names to IDs
+
+    # get for how long we have been running this task for in seconds
+    start_time = data_base.get_start_time_for_task(orderID)[0]
+    run_time = (datetime.datetime.utcnow().replace(microsecond=0) - start_time).total_seconds()
+
+    taskID = data_base.get_ID_from_name(0, task)
+    resourceID = data_base.get_ID_from_name(1, resource)
+    for i, task in enumerate(tasks):
+        tasks[i] = data_base.get_ID_from_name(0, task)
+    inputs = tasks + [taskID] + [resourceID] + [run_time]
+
+    #inputs = torch.tensor(inputs, dtype=torch.float32)
+    #prediction = model(inputs).data
+    #prediction = np.asarray(prediction)[0]
+    #return prediction
+
 def main():
-    run_time = 0
     #plot_real = Pie_Plot()
     #plot_predicted = Pie_Plot()
     #plot = Plot()
 
+    # get environment variables
     host, port = os.getenv("POSTGRES_HOST").split(":")
     dbname = os.getenv("POSTGRES_NAME")
     user = os.getenv("POSTGRES_USER")
@@ -174,37 +193,21 @@ def main():
     data_base = database.Database(host, port, dbname, user, password)
     #model = load_model()
     for message in consumer:
-        run_time += 1
-
         # read the message from the kafka producer
-        # services is a string representation of a list, so we will need to turn it into a list before using it
+        # tasks is a string representation of a list, so we will need to turn it into a list before using it
         value = message.value.decode("utf-8")
-        if value == "TERMINATE":
-            print("send3", flush=True)
-            producer.send("STOP", "STOP")
+        # we got a termination notification
+        if value == "1":
+            producer.send("0", "0")
             break
-        services, taskID, service, resource = message.key.decode("utf-8").split(":")
-        services = eval(services)
+        tasks, orderID, task, resource = message.key.decode("utf-8").split(":")
+        tasks = eval(tasks)
 
-        data_base.insert_metric(taskID, service, resource, value)
-        print(message.key.decode("utf-8"), flush=True)
+        data_base.insert_metric(orderID, task, resource, value)
 
-        # get for how long we have been running this task for in seconds
-        start_time = data_base.get_start_time_for_task(taskID)[0]
-        run_time = (datetime.datetime.utcnow().replace(microsecond=0) - start_time).total_seconds()
+        get_expected_usage(data_base, tasks, task, resource)
 
-        # get the expected usage given our model
-        # first we have to translate all the services/resources names to IDs
-        serviceID = data_base.get_ID_from_name(0, service)
-        resourceID = data_base.get_ID_from_name(1, resource)
-        for i, service in enumerate(services):
-            services[i] = data_base.get_ID_from_name(0, service)
-        inputs = services + [serviceID] + [resourceID] + [run_time]
-        #inputs = torch.tensor(inputs, dtype=torch.float32)
-        #prediction = model(inputs).data
-        #prediction = np.asarray(prediction)[0]
-
-        # visualize the actual and the predicted resource usage for this service-resource pair
+        # visualize the actual and the predicted resource usage for this task-resource pair
         #plot_real.update(resource, float(value))
         #plot_predicted.update(resource, prediction)
         #plot.update(resource, float(value), prediction)

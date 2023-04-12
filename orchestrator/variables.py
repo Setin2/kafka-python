@@ -15,5 +15,3 @@ POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "postgres"
 POSTGRES_HOST = "database:5432"
 POSTGRES_NAME = "postgres"
-
-# Why is kubernetes inside my docker desktop stuck on "Starting ..."

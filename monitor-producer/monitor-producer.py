@@ -1,8 +1,8 @@
 import os
 import sys
 import json
-import psutil
 import time
+import psutil
 import datetime
 from kafka import KafkaProducer
 from kafka import KafkaConsumer
@@ -79,24 +79,31 @@ def get_disk_usage():
     return disk_percent
 
 def send_metrics(message):
+    """
+        Produce a message with the metrics for the given service to the "resources" topic.
+
+        Args:
+            message (saf): sadsad
+    """
     global stop_monitoring
     taskID = message.value.decode("utf-8")
 
-    if "TERMINATE" in taskID:
-        print("terminate", flush=True)
-        producer.send("TERMINATE", "TERMINATE")
-    elif "STOP" in taskID:
-        print("stop", flush=True)
+    # order is finished, notify the monitor-consumer
+    if taskID == "1":
+        producer.send("1", "1")
+    # monitor-consumer has closed down, we stop this script as well
+    elif taskID == "0":
         stop_monitoring = True
+    # a task is running, get its resource consumption and send it to the monitor-consumer
     else:
-        service_list, service = message.key.decode("utf-8").split(":")
+        required_tasks, task = message.key.decode("utf-8").split(":")
         cpu_usage = get_cpu_usage()
         mem_usage = get_memory_usage()
         disk_usage = get_disk_usage()
-        print(service_list + " " + taskID + " " + service + ":CPU", str(cpu_usage), flush=True)
-        producer.send(service_list + ":" + taskID + ":" + service + ":CPU", str(cpu_usage))
-        producer.send(service_list + ":" + taskID + ":" +  service + ":RAM", str(mem_usage))
-        producer.send(service_list + ":" + taskID + ":" +  service + ":DISK", str(disk_usage))
+        producer.send(required_tasks + ":" + taskID + ":" + task + ":CPU", str(cpu_usage))
+        producer.send(required_tasks + ":" + taskID + ":" +  task + ":RAM", str(mem_usage))
+        producer.send(required_tasks + ":" + taskID + ":" +  task + ":DISK", str(disk_usage))
+        print(required_tasks + " " + taskID + " " + task + ":CPU", str(cpu_usage), flush=True)
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer("resources", kafka_bootstrap_servers)
