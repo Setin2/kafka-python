@@ -1,13 +1,14 @@
-from kubernetes import client, config, watch
-from kubernetes.client.rest import ApiException
 import json
 import uuid
 import time
+from kubernetesAPI import variables
+from kubernetes import client, config, watch
+from kubernetes.client.rest import ApiException
 
 # Dont know, some things we need to do stuff
 config.load_kube_config()
 
-namespace = "default"
+namespace = variables.NAMESPACE
 v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()
 batch_v1 = client.BatchV1Api()
@@ -40,16 +41,16 @@ def create_job(service_name, args=[]):
                 containers=[
                     client.V1Container(
                         name=service_name,
-                        image=f"setin/{service_name}:latest",
+                        image=f"{variables.DOCKER_HUB_NAME}/{service_name}:latest",
                         command=["python", f"{service_name}.py"] + args,
                         ports=[client.V1ContainerPort(name="kafka-python", container_port=9092)],
                         env=[
-                            client.V1EnvVar(name="KAFKA_BOOTSTRAP_SERVERS", value="kafka-broker:9092"),
-                            client.V1EnvVar(name="KAFKA_ZOOKEEPER_CONNECT", value="zookeeper:2181"),
-                            client.V1EnvVar(name="POSTGRES_HOST", value="database:5432"),
-                            client.V1EnvVar(name="POSTGRES_NAME", value="postgres"),
-                            client.V1EnvVar(name="POSTGRES_USER", value="postgres"),
-                            client.V1EnvVar(name="POSTGRES_PASSWORD", value="postgres")
+                            client.V1EnvVar(name="KAFKA_BOOTSTRAP_SERVERS", value=variables.KAFKA_BOOTSTRAP_SERVERS),
+                            client.V1EnvVar(name="KAFKA_ZOOKEEPER_CONNECT", value=variables.KAFKA_ZOOKEEPER_CONNECT),
+                            client.V1EnvVar(name="POSTGRES_HOST", value=variables.POSTGRES_HOST),
+                            client.V1EnvVar(name="POSTGRES_NAME", value=variables.POSTGRES_NAME),
+                            client.V1EnvVar(name="POSTGRES_USER", value=variables.POSTGRES_USER),
+                            client.V1EnvVar(name="POSTGRES_PASSWORD", value=variables.POSTGRES_PASSWORD)
                         ]
                     )
                 ]

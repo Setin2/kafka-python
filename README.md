@@ -17,11 +17,11 @@ To be added later (the orchestrator doesnt do much rn)
 
 ### Permision
 
-In order to start new jobs/pods from inside the kubernetes cluster, we must give permission to the orchestartor script. First, a serviceaccount must be created using ``` kubectl create serviceaccount orchestrator ```, and then, the role and rolebinding files from ``` ./orchestrator/ ``` must be applied to the kubernetes cluster using ``` kubectl apply -f orchestrator/role. yaml ```.
+In order to start new jobs/pods from inside the kubernetes cluster, we must give permission to the orchestartor script. First, a serviceaccount must be created using ``` kubectl create serviceaccount orchestrator ```, and then, the role and rolebinding files from ``` ./kubernetesAPI/ ``` must be applied to the kubernetes cluster using ``` kubectl apply -f kubernetesAPI/role. yaml ```.
 
 ## Broker, Zookeeper & Database
 
-A kafka broker, zookeeper and a postgreSQL server can be initialized through the main script. The kafka bootstrap servers, database credidentials, and other kubernetes variables will be given to each service as environment variables. The files used to start the deployments, services, and jobs reside in ``` ./orchestrator/ ``` for now.
+A kafka broker, zookeeper and a postgreSQL server can be initialized through the main script. The kafka bootstrap servers, database credidentials, and other kubernetes variables will be given to each service as environment variables. The files used to start the deployments, services, and jobs reside in ``` ./kubernetesAPI/ ``` for now.
 
 ## Microservices
 

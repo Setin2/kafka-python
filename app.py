@@ -3,10 +3,10 @@ import time
 import threading
 import tkinter as tk
 from tkinter import filedialog
-from orchestrator import kubernetes_job
-from orchestrator import database_deploy
-from orchestrator import kafka_broker_deploy
-from orchestrator import kafka_zookeeper_deploy
+from kubernetesAPI import kubernetes_job
+from kubernetesAPI import database_deploy
+from kubernetesAPI import kafka_broker_deploy
+from kubernetesAPI import kafka_zookeeper_deploy
 
 orders = []
 

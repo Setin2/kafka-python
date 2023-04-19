@@ -1,10 +1,11 @@
-from kubernetes import client, config, watch
 import json
 import time
+from kubernetesAPI import variables
+from kubernetes import client, config, watch
 
 # Dont know, some things we need to do stuff
 config.load_kube_config()
-namespace = "default"
+namespace = variables.NAMESPACE
 v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()
 batch_v1 = client.BatchV1Api()
@@ -25,17 +26,17 @@ def create_zookeeper(start_deployment=True, start_service=True):
                                 name="zookeeper",
                                 image="confluentinc/cp-zookeeper:7.3.0",
                                 env=[
-                                    client.V1EnvVar(name="ZOOKEEPER_CLIENT_PORT", value="2181"),
-                                    client.V1EnvVar(name="ZOOKEEPER_TICK_TIME", value="2000")
+                                    client.V1EnvVar(name="ZOOKEEPER_CLIENT_PORT", value=variables.ZOOKEEPER_PORT),
+                                    client.V1EnvVar(name="ZOOKEEPER_TICK_TIME", value=variables.ZOOKEEPER_TICK_TIME)
                                 ],
-                                ports=[client.V1ContainerPort(container_port=2181)]
+                                ports=[client.V1ContainerPort(container_port=int(variables.ZOOKEEPER_PORT))]
                             )
                         ]
                     )
                 )
             )
         )
-        apps_v1.create_namespaced_deployment(body=zookeeper_deployment, namespace="default")
+        apps_v1.create_namespaced_deployment(body=zookeeper_deployment, namespace=namespace)
 
     if start_service:
         # define and start a kafka zookeeper service
@@ -43,7 +44,7 @@ def create_zookeeper(start_deployment=True, start_service=True):
             metadata=client.V1ObjectMeta(name="zookeeper"),
             spec=client.V1ServiceSpec(
                 selector={"app": "zookeeper"},
-                ports=[client.V1ServicePort(port=2181)]
+                ports=[client.V1ServicePort(port=int(variables.ZOOKEEPER_PORT))]
             )
         )
-        v1.create_namespaced_service(body=zookeeper_service, namespace="default")
+        v1.create_namespaced_service(body=zookeeper_service, namespace=namespace)
