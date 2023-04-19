@@ -89,10 +89,12 @@ def send_metrics(message):
     taskID = message.value.decode("utf-8")
 
     # order is finished, notify the monitor-consumer
-    if taskID == "1":
-        producer.send("1", "1")
+    if "STOP" in taskID:
+        print("stop", flush=True)
+        producer.send("STOP", "STOP")
     # monitor-consumer has closed down, we stop this script as well
-    elif taskID == "0":
+    elif "TERMINATE" in taskID:
+        print("term", flush=True)
         stop_monitoring = True
     # a task is running, get its resource consumption and send it to the monitor-consumer
     else:
@@ -103,11 +105,14 @@ def send_metrics(message):
         producer.send(required_tasks + ":" + taskID + ":" + task + ":CPU", str(cpu_usage))
         producer.send(required_tasks + ":" + taskID + ":" +  task + ":RAM", str(mem_usage))
         producer.send(required_tasks + ":" + taskID + ":" +  task + ":DISK", str(disk_usage))
-        print(required_tasks + " " + taskID + " " + task + ":CPU", str(cpu_usage), flush=True)
+        print(task, flush=True)
+        #print(required_tasks + " " + taskID + " " + task + ":CPU", str(cpu_usage), flush=True)
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-producer = Producer("resources", kafka_bootstrap_servers)
-consumer = KafkaConsumer("services", "services_group", bootstrap_servers=kafka_bootstrap_servers)
+orderID = sys.argv[1]
+print("task" + orderID, flush=True)
+producer = Producer("resource" + orderID, kafka_bootstrap_servers)
+consumer = KafkaConsumer("task" + orderID, "services_group", bootstrap_servers=kafka_bootstrap_servers)
 
 # the message from the current job we are monitoring
 current_message = None
@@ -115,6 +120,7 @@ stop_monitoring = False
 while not stop_monitoring:
     # check to see if we got a new message
     new_message = consumer.poll(0.1)
+    print(new_message)
     
     # if not, we send metrics for current service
     if not new_message and current_message is not None:

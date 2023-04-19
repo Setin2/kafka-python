@@ -11,7 +11,7 @@ orders = []
 
 # Methods for starting the database, zookeeper, and broker services & deployments. The GUI buttons are used to run these.
 def on_create_database_click():
-    database_deploy.create_database(start_deployment=True, start_service=True)
+    database_deploy.create_database(start_deployment=True, start_service=False)
     output.insert(tk.END, "Database is running...\n")
     database_button.configure(bg="green")
 
@@ -49,16 +49,15 @@ def start_orchestrator():
         orderID = order["orderID"]
         print(f"Starting order nr.{i + 1} with ID {orderID}")
         # start monitoring this order
-        monitor_consumer_job = kubernetes_job.create_job("monitor-consumer")
-        monitor_producer_job = kubernetes_job.create_job("monitor-producer")
+        monitor_consumer_job = kubernetes_job.create_job("monitor-consumer", [orderID])
+        monitor_producer_job = kubernetes_job.create_job("monitor-producer", [orderID])
 
         # extract the order details and send them to the orchestrator job
         required_tasks = str(order["required_tasks"])
         orchestrator_job = kubernetes_job.create_job("orchestrator", [orderID, required_tasks])
-        kubernetes_job.wait_for_job_completion("orchestrator")
         # clear the orders completed from the queue
         if order == orders[len(orders) - 1]:
-            print("All orders finished")
+            print("All orders have been started")
             orders.clear()
         # add some delay between orders to give jobs time to finish
         else: time.sleep(5)
@@ -81,6 +80,8 @@ def on_load_json_files_click():
     else:
         output.insert(tk.END, "No files selected.\n")
     start_orchestrator()
+
+job = kubernetes_job.create_job("testing-job", ["1"])
 
 # Create the main window
 root = tk.Tk()

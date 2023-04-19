@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 #import torch
 #import network
@@ -157,19 +158,14 @@ class Plot():
 #    model.load_model(optimizer)
 #    return model
 
-def get_expected_usage(data_base, tasks, task, resource):
+def get_expected_usage(data_base, tasks, task, resource, task_runtime):
     # get the expected usage given our model
     # first we have to translate all the tasks/resources names to IDs
-
-    # get for how long we have been running this task for in seconds
-    start_time = data_base.get_start_time_for_task(orderID)[0]
-    run_time = (datetime.datetime.utcnow().replace(microsecond=0) - start_time).total_seconds()
-
     taskID = data_base.get_ID_from_name(0, task)
     resourceID = data_base.get_ID_from_name(1, resource)
     for i, task in enumerate(tasks):
         tasks[i] = data_base.get_ID_from_name(0, task)
-    inputs = tasks + [taskID] + [resourceID] + [run_time]
+    inputs = tasks + [taskID] + [resourceID] + [task_runtime]
 
     #inputs = torch.tensor(inputs, dtype=torch.float32)
     #prediction = model(inputs).data
@@ -188,24 +184,34 @@ def main():
     password = os.getenv("POSTGRES_PASSWORD")
     kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 
-    producer = Producer("services", kafka_bootstrap_servers)
-    consumer = KafkaConsumer("resources", "resources_group", bootstrap_servers=kafka_bootstrap_servers)
+    orderID = sys.argv[1]
+    producer = Producer("task" + orderID, kafka_bootstrap_servers)
+    print("task" + orderID, flush=True)
+    consumer = KafkaConsumer("resource" + orderID, "resources_group", bootstrap_servers=kafka_bootstrap_servers)
     data_base = database.Database(host, port, dbname, user, password)
+    curr_task = ""
+    task_runtime = 0
     #model = load_model()
     for message in consumer:
         # read the message from the kafka producer
         # tasks is a string representation of a list, so we will need to turn it into a list before using it
         value = message.value.decode("utf-8")
         # we got a termination notification
-        if value == "1":
-            producer.send("0", "0")
+        if "STOP" in value:
+            producer.send("TERMINATE", "TERMINATE")
             break
         tasks, orderID, task, resource = message.key.decode("utf-8").split(":")
+        # check to see if we are monitoring a new task (we need to keep track of how long we run tasks for)
+        if task is not curr_task:
+            curr_task = task
+            task_runtime = 0
+        else: task_runtime += 1
+        print("Got " + tasks + orderID + task + resource, flush=True)
         tasks = eval(tasks)
 
         data_base.insert_metric(orderID, task, resource, value)
 
-        get_expected_usage(data_base, tasks, task, resource)
+        get_expected_usage(data_base, tasks, task, resource, task_runtime)
 
         # visualize the actual and the predicted resource usage for this task-resource pair
         #plot_real.update(resource, float(value))

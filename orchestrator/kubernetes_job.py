@@ -22,11 +22,14 @@ def create_job(service_name, args=[]):
         Returns:
             kubernetes.client.BatchV1Api.V1Job: the kubernetes job
     """
+    # Generate a unique name for the job using a combination of service_name, timestamp, and random UUID
+    job_name = f"{service_name}-{int(time.time())}-{str(uuid.uuid4())[:8]}"
+
     # Define the YAML for the job
     job = client.V1Job()
     job.api_version = "batch/v1"
     job.kind = "Job"
-    job.metadata = client.V1ObjectMeta(name=service_name)
+    job.metadata = client.V1ObjectMeta(name=job_name)
     job.spec = client.V1JobSpec(
         completions=1,
         ttl_seconds_after_finished=1,  # Automatically delete the job after 1 second
