@@ -37,7 +37,7 @@ def create_job(service_name, args=[]):
             spec=client.V1PodSpec(
                 restart_policy="Never",
                 host_network=False,
-                service_account_name="orchestrator",
+                service_account_name=variables.SERVICE_ACCOUNT_NAME,
                 containers=[
                     client.V1Container(
                         name=service_name,

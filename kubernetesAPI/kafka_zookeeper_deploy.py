@@ -14,17 +14,17 @@ def create_zookeeper(start_deployment=True, start_service=True):
     # define and start a kafka zookeeper deployment
     if start_deployment:
         zookeeper_deployment = client.V1Deployment(
-            metadata=client.V1ObjectMeta(name="zookeeper"),
+            metadata=client.V1ObjectMeta(name=variables.ZOOKEEPER_NAME),
             spec=client.V1DeploymentSpec(
-                selector=client.V1LabelSelector(match_labels={"app": "zookeeper"}),
+                selector=client.V1LabelSelector(match_labels={"app": variables.ZOOKEEPER_NAME}),
                 replicas=1,
                 template=client.V1PodTemplateSpec(
-                    metadata=client.V1ObjectMeta(labels={"app": "zookeeper"}),
+                    metadata=client.V1ObjectMeta(labels={"app": variables.ZOOKEEPER_NAME}),
                     spec=client.V1PodSpec(
                         containers=[
                             client.V1Container(
-                                name="zookeeper",
-                                image="confluentinc/cp-zookeeper:7.3.0",
+                                name=variables.ZOOKEEPER_NAME,
+                                image=variables.ZOOKEEPER_IMAGE,
                                 env=[
                                     client.V1EnvVar(name="ZOOKEEPER_CLIENT_PORT", value=variables.ZOOKEEPER_PORT),
                                     client.V1EnvVar(name="ZOOKEEPER_TICK_TIME", value=variables.ZOOKEEPER_TICK_TIME)
@@ -41,9 +41,9 @@ def create_zookeeper(start_deployment=True, start_service=True):
     if start_service:
         # define and start a kafka zookeeper service
         zookeeper_service = client.V1Service(
-            metadata=client.V1ObjectMeta(name="zookeeper"),
+            metadata=client.V1ObjectMeta(name=variables.ZOOKEEPER_NAME),
             spec=client.V1ServiceSpec(
-                selector={"app": "zookeeper"},
+                selector={"app": variables.ZOOKEEPER_NAME},
                 ports=[client.V1ServicePort(port=int(variables.ZOOKEEPER_PORT))]
             )
         )
