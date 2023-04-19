@@ -112,7 +112,7 @@ kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 orderID = sys.argv[1]
 print("task" + orderID, flush=True)
 producer = Producer("resource" + orderID, kafka_bootstrap_servers)
-consumer = KafkaConsumer("task" + orderID, "services_group", bootstrap_servers=kafka_bootstrap_servers)
+consumer = KafkaConsumer("task" + orderID, bootstrap_servers=kafka_bootstrap_servers)
 
 # the message from the current job we are monitoring
 current_message = None
@@ -120,7 +120,7 @@ stop_monitoring = False
 while not stop_monitoring:
     # check to see if we got a new message
     new_message = consumer.poll(0.1)
-    print(new_message)
+    print(new_message, flush=True)
     
     # if not, we send metrics for current service
     if not new_message and current_message is not None:

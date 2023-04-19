@@ -32,10 +32,12 @@ class Producer:
                 value (float): the value of our message (resource consumption)
                 allow_callback (bool): True if we want callbacks from our messages, False otherwise and by default
         """
+        future = None
         if allow_callback:
-            self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8')).add_callback(self.on_send_success).add_errback(self.on_send_error)
+            future = self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8')).add_callback(self.on_send_success).add_errback(self.on_send_error)
         else:
-            self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8'))
+            future = self.producer.send(self.topic, bytes(value, 'utf-8'), bytes(key, 'utf-8'))
 
         # block until all async messages are sent
         self.producer.flush()
+        return future

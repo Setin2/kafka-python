@@ -1,3 +1,5 @@
+import atexit
+import signal
 import datetime
 import psycopg2
 import psycopg2.pool
@@ -19,40 +21,77 @@ class Database():
             user=user,
             password=password,
             minconn=1,
-            maxconn=1  # set maxconn to 1 to disable pooling
+            maxconn=0  # maximum number of connections, 0 for unlimited connections
         )
         self.connection = pool.getconn()
         pool.putconn(self.connection)
         self.cursor = self.connection.cursor()
+
         # create main table called 'metrics'
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS metrics (
-                orderID int, 
-                taskID int, 
-                resourceID int, 
-                value double precision, 
-                timestamp timestamp
-            );"""
-        )
+        try:
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS metrics (
+                    orderID int, 
+                    taskID int, 
+                    resourceID int, 
+                    value double precision, 
+                    timestamp timestamp
+                );
+            """)
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
         # create the lookup tables for the ID-name pairs
-        self.cursor.execute("""
-            CREATE SEQUENCE IF NOT EXISTS task_id_sequence INCREMENT BY 10 START 10;
-        """)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS task_lookup (
-                taskID INTEGER PRIMARY KEY DEFAULT nextval('task_id_sequence'),
-                task_name TEXT UNIQUE NOT NULL
-            );"""
-        )
-        self.cursor.execute("""
-            CREATE SEQUENCE IF NOT EXISTS resource_id_sequence INCREMENT BY 10 START 10;
-        """)
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS resource_lookup (
-                resourceID INTEGER PRIMARY KEY DEFAULT nextval('resource_id_sequence'),
-                resource_name TEXT UNIQUE NOT NULL
-            );"""
-        )
+        try:
+            self.cursor.execute("""
+                CREATE SEQUENCE IF NOT EXISTS task_id_sequence INCREMENT BY 10 START 10;
+            """)
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS task_lookup (
+                    taskID INTEGER PRIMARY KEY DEFAULT nextval('task_id_sequence'),
+                    task_name TEXT UNIQUE NOT NULL
+                );
+            """)
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
+        try:
+            self.cursor.execute("""
+                CREATE SEQUENCE IF NOT EXISTS resource_id_sequence INCREMENT BY 10 START 10;
+            """)
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS resource_lookup (
+                    resourceID INTEGER PRIMARY KEY DEFAULT nextval('resource_id_sequence'),
+                    resource_name TEXT UNIQUE NOT NULL
+                );
+            """)
+            self.connection.commit()
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+
+        # Set a flag indicating that the connection has not been closed
+        self.closed = False
+
+        # Define a method to manually close the connection
+        def close_connection():
+            if not self.closed:
+                self.connection.close()
+                self.closed = True
+
+        # Set up an atexit hook to close the connection when the program exits
+        atexit.register(close_connection)
+
+        # Define a method to return the connection to the pool or close it manually
+        def return_connection():
+            try:
+                pool.putconn(self.connection, key=self.connection.get_backend_pid())
+            except KeyError:
+                close_connection()
+
+        # Set up a signal handler to return the connection to the pool or close it manually
+        signal.signal(signal.SIGTERM, lambda signum, frame: return_connection())
     
     def get_ID_from_name(self, type, name):
         table, row1, row2 = "", "", ""

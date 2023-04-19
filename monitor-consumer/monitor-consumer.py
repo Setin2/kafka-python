@@ -187,7 +187,7 @@ def main():
     orderID = sys.argv[1]
     producer = Producer("task" + orderID, kafka_bootstrap_servers)
     print("task" + orderID, flush=True)
-    consumer = KafkaConsumer("resource" + orderID, "resources_group", bootstrap_servers=kafka_bootstrap_servers)
+    consumer = KafkaConsumer("resource" + orderID, bootstrap_servers=kafka_bootstrap_servers)
     data_base = database.Database(host, port, dbname, user, password)
     curr_task = ""
     task_runtime = 0

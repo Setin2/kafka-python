@@ -51,16 +51,12 @@ def start_orchestrator():
         # start monitoring this order
         monitor_consumer_job = kubernetes_job.create_job("monitor-consumer", [orderID])
         monitor_producer_job = kubernetes_job.create_job("monitor-producer", [orderID])
+        # add some delay between jobs
+        time.sleep(5)
 
         # extract the order details and send them to the orchestrator job
         required_tasks = str(order["required_tasks"])
         orchestrator_job = kubernetes_job.create_job("orchestrator", [orderID, required_tasks])
-        # clear the orders completed from the queue
-        if order == orders[len(orders) - 1]:
-            print("All orders have been started")
-            orders.clear()
-        # add some delay between orders to give jobs time to finish
-        else: time.sleep(5)
 
 """        
     Load the JSON files with the orders. The GUI buttons are used to run this method
