@@ -64,12 +64,6 @@ def start_orchestrator():
         # start a new thread to monitor the orchestrator job
         thread = threading.Thread(target=kubernetes_job.wait_for_job_completion, args=("orchestrator-" + orderID,))
         thread.start()
-        #thread2 = threading.Thread(target=kubernetes_job.get_job_logs, args=(orchestrator_job, "orchestrator-" + orderID))
-        #thread2.start()
-
-        time.sleep(5)
-        logs = kubernetes_job.get_job_logs("orchestrator-" + orderID)
-        print(logs)
 
         # store the thread object in a list to join them later
         threads.append(thread)

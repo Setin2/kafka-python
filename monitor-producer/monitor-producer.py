@@ -86,31 +86,29 @@ def send_metrics(message):
             message (saf): sadsad
     """
     global stop_monitoring
-    orderID = message.value.decode("utf-8")
+    message_type = message.key.decode("utf-8")
 
+    # task is done, wait for next task
+    if "HALT" in message_type:
+        return
     # order is finished, notify the monitor-consumer
-    if "STOP" in orderID:
-        print("stop", flush=True)
+    if "STOP" in message_type:
         producer.send("STOP", "STOP")
     # monitor-consumer has closed down, we stop this script as well
-    elif "TERMINATE" in orderID:
-        print("term", flush=True)
+    elif "TERMINATE" in message_type:
         stop_monitoring = True
     # a task is running, get its resource consumption and send it to the monitor-consumer
     else:
-        required_tasks, task = message.key.decode("utf-8").split(":")
+        required_tasks, task, orderID = message.value.decode("utf-8").split(":")
         cpu_usage = get_cpu_usage()
         mem_usage = get_memory_usage()
         disk_usage = get_disk_usage()
         producer.send(required_tasks + ":" + orderID + ":" + task + ":CPU", str(cpu_usage))
         producer.send(required_tasks + ":" + orderID + ":" +  task + ":RAM", str(mem_usage))
         producer.send(required_tasks + ":" + orderID + ":" +  task + ":DISK", str(disk_usage))
-        print(task, flush=True)
-        #print(required_tasks + " " + taskID + " " + task + ":CPU", str(cpu_usage), flush=True)
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 orderID = sys.argv[1]
-print("task" + orderID, flush=True)
 producer = Producer("resource" + orderID, kafka_bootstrap_servers)
 consumer = KafkaConsumer("task" + orderID, bootstrap_servers=kafka_bootstrap_servers)
 
@@ -120,7 +118,6 @@ stop_monitoring = False
 while not stop_monitoring:
     # check to see if we got a new message
     new_message = consumer.poll(0.1)
-    print(new_message, flush=True)
     
     # if not, we send metrics for current service
     if not new_message and current_message is not None:

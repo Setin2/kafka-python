@@ -186,7 +186,6 @@ def main():
 
     orderID = sys.argv[1]
     producer = Producer("task" + orderID, kafka_bootstrap_servers)
-    print("task" + orderID, flush=True)
     consumer = KafkaConsumer("resource" + orderID, bootstrap_servers=kafka_bootstrap_servers)
     data_base = database.Database(host, port, dbname, user, password)
     curr_task = ""
@@ -206,7 +205,6 @@ def main():
             curr_task = task
             task_runtime = 0
         else: task_runtime += 1
-        print("Got " + tasks + orderID + task + resource, flush=True)
         tasks = eval(tasks)
 
         data_base.insert_metric(orderID, task, resource, value)
