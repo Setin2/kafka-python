@@ -86,14 +86,14 @@ def send_metrics(message):
             message (saf): sadsad
     """
     global stop_monitoring
-    taskID = message.value.decode("utf-8")
+    orderID = message.value.decode("utf-8")
 
     # order is finished, notify the monitor-consumer
-    if "STOP" in taskID:
+    if "STOP" in orderID:
         print("stop", flush=True)
         producer.send("STOP", "STOP")
     # monitor-consumer has closed down, we stop this script as well
-    elif "TERMINATE" in taskID:
+    elif "TERMINATE" in orderID:
         print("term", flush=True)
         stop_monitoring = True
     # a task is running, get its resource consumption and send it to the monitor-consumer
@@ -102,9 +102,9 @@ def send_metrics(message):
         cpu_usage = get_cpu_usage()
         mem_usage = get_memory_usage()
         disk_usage = get_disk_usage()
-        producer.send(required_tasks + ":" + taskID + ":" + task + ":CPU", str(cpu_usage))
-        producer.send(required_tasks + ":" + taskID + ":" +  task + ":RAM", str(mem_usage))
-        producer.send(required_tasks + ":" + taskID + ":" +  task + ":DISK", str(disk_usage))
+        producer.send(required_tasks + ":" + orderID + ":" + task + ":CPU", str(cpu_usage))
+        producer.send(required_tasks + ":" + orderID + ":" +  task + ":RAM", str(mem_usage))
+        producer.send(required_tasks + ":" + orderID + ":" +  task + ":DISK", str(disk_usage))
         print(task, flush=True)
         #print(required_tasks + " " + taskID + " " + task + ":CPU", str(cpu_usage), flush=True)
 

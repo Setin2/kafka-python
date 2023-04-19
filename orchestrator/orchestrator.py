@@ -1,10 +1,12 @@
 import os
 import sys
 import time
+import logging
 import producer
 import kubernetes_job_cluster
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
+logging.basicConfig(level=logging.INFO)
 
 orderID = sys.argv[1]
 required_tasks = sys.argv[2]
@@ -25,7 +27,6 @@ for i, task_name in enumerate(required_tasks):
         try:
             # check to see if we got a new message
             new_message = consumer.poll(0.1)
-            print(new_message, flush=True)
             
             # if so, we get the message output of the task
             if new_message:
@@ -34,6 +35,7 @@ for i, task_name in enumerate(required_tasks):
                     for message in messages:
                         task_done = True
                         progress = message.value.decode("utf-8")
+                        logging.info(task_name)
             time.sleep(1)
         except KafkaError as e:
             print(f'Error: {e}', flush=True)

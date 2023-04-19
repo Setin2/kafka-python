@@ -1,4 +1,5 @@
 from kubernetes import client, config, watch
+from kubernetes.client.rest import ApiException
 import json
 import uuid
 import time
@@ -22,14 +23,11 @@ def create_job(service_name, args=[]):
         Returns:
             kubernetes.client.BatchV1Api.V1Job: the kubernetes job
     """
-    # Generate a unique name for the job using a combination of service_name, timestamp, and random UUID
-    job_name = f"{service_name}-{int(time.time())}-{str(uuid.uuid4())[:8]}"
-
     # Define the YAML for the job
     job = client.V1Job()
     job.api_version = "batch/v1"
     job.kind = "Job"
-    job.metadata = client.V1ObjectMeta(name=job_name)
+    job.metadata = client.V1ObjectMeta(name=service_name + "-" + args[0])
     job.spec = client.V1JobSpec(
         completions=1,
         ttl_seconds_after_finished=1,  # Automatically delete the job after 1 second
@@ -64,29 +62,27 @@ def create_job(service_name, args=[]):
 
 def wait_for_job_completion(service_name):
     """
-        Read the events for a service with the given name and wait for a success or failure event to terminate its corresponding monitoring service.
+        Read the events for a service with the given name and wait for a success or failure event.
 
         Args:
             service_name (str): name of the service whose events we want to read
     """
-    print(f"Waiting for {service_name} to complete...")
-    w = watch.Watch()
-    for event in w.stream(
-        batch_v1.list_namespaced_job,
-        namespace=namespace,
-        label_selector=f"job-name={service_name}",
-        timeout_seconds=0
-    ):
-        o = event["object"]
-
-        if o.status.succeeded:
-            print("Job finished succesfully")
-            w.stop()
-            return
-
-        if not o.status.active and o.status.failed:
-            w.stop()
-            raise Exception("Job Failed")
+    while True:
+        try:
+            job_status = batch_v1.read_namespaced_job_status(name=service_name, namespace=namespace)
+            if job_status.status.succeeded:
+                print(f"Job {service_name} finished successfully.")
+                return
+            elif job_status.status.failed:
+                raise Exception("Job failed")
+        except ApiException as e:
+            if e.status == 404:
+                # Job not found yet, continue waiting
+                pass
+            else:
+                # Some other error occurred, raise it
+                raise e
+        time.sleep(1)  # Wait for 1 second before checking the job status again
 
 def delete_pod_and_job(job_name):
     batch_v1.delete_namespaced_job(name=job_name, namespace=namespace, body=client.V1DeleteOptions(propagation_policy="Background"))
