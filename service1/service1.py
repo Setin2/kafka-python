@@ -8,13 +8,14 @@ required_tasks = eval(required_tasks)
 task_name = sys.argv[2]
 orderID = sys.argv[3]
 progress = sys.argv[4]
+pid = os.getpid()
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 monitoring_producer = producer.Producer("task" + orderID, kafka_bootstrap_servers)
 orchestrator_producer = producer.Producer("orchestrator", kafka_bootstrap_servers)
 
 # task start, notify the monitoring producer
-monitoring_producer.send("ORDER", str(required_tasks) + ":" + task_name + ":" + orderID)
+monitoring_producer.send("ORDER", str(required_tasks) + ":" + task_name + ":" + str(pid) + ":" + orderID)
 
 time.sleep(4)
 
