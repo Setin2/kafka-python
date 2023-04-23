@@ -1,6 +1,7 @@
-import json
 import time
+import json
 import threading
+import gui_interface
 import tkinter as tk
 from tkinter import filedialog
 from kubernetesAPI import kubernetes_job
@@ -9,38 +10,6 @@ from kubernetesAPI import kafka_broker_deploy
 from kubernetesAPI import kafka_zookeeper_deploy
 
 orders = []
-
-# Methods for starting the database, zookeeper, and broker services & deployments. The GUI buttons are used to run these.
-def on_create_database_click():
-    database_deploy.create_database(start_deployment=True, start_service=False)
-    output.insert(tk.END, "Database is running...\n")
-    database_button.configure(bg="green")
-
-def on_create_zookeeper_click():
-    kafka_zookeeper_deploy.create_zookeeper(start_deployment=True, start_service=False)
-    output.insert(tk.END, "Zookeeper is running...\n")
-    zookeeper_button.configure(bg="green")
-
-def on_create_broker_click():
-    kafka_broker_deploy.create_broker(start_deployment=True, start_service=False)
-    output.insert(tk.END, "Broker is running...\n")
-    broker_button.configure(bg="green")
-
-# Methods for deleting the database, zookeeper, and broker services & deployments. The GUI buttons are used to run these.
-def on_delete_database():
-    kubernetes_job.delete_deployment_and_service("database", delete_deployment=True, delete_service=False)
-    output.insert(tk.END, "Database deleted.\n")
-    database_button.configure(bg="red")
-
-def on_delete_zookeeper():
-    kubernetes_job.delete_deployment_and_service("zookeeper", delete_deployment=True, delete_service=False)
-    output.insert(tk.END, "Zookeeper deleted.\n")
-    zookeeper_button.configure(bg="red")
-
-def on_delete_broker():
-    kubernetes_job.delete_deployment_and_service("kafka-broker", delete_deployment=True, delete_service=False)
-    output.insert(tk.END, "Broker deleted.\n")
-    broker_button.configure(bg="red")
 
 """        
     For each order loaded so far, we start an orchestrator job and send it the order.
@@ -72,10 +41,10 @@ def start_orchestrator():
     for thread in threads:
         thread.join()
 
-"""        
-    Load the JSON files with the orders. The GUI buttons are used to run this method
-"""
 def on_load_json_files_click():
+    """        
+        Load the JSON files with the orders. The GUI buttons are used to run this method
+    """
     file_paths = filedialog.askopenfilenames(
         title="Select orders",
         filetypes=(("JSON files", "*.json"), ("All files", "*.*"))
@@ -86,37 +55,14 @@ def on_load_json_files_click():
             with open(file_path, "r") as file:
                 json_data = json.load(file)
                 orders.append(json_data)
-                output.insert(tk.END, f"Orders have been loaded.\n")
+                print("Orders have been loaded.")
     else:
-        output.insert(tk.END, "No files selected.\n")
+        print("No files selected.")
     start_orchestrator()
 
-job = kubernetes_job.create_job("testing-job", ["1"])
+#job = kubernetes_job.create_job("testing-job", ["1"])
 
-# Create the main window
-root = tk.Tk()
-root.title("GUI Example")
-
-# Create buttons and output field using grid layout
-database_button = tk.Button(root, text="Database", command=on_create_database_click, bg="red", fg="white", font=("Helvetica", 12, "bold"))
-database_button.grid(row=0, column=0, padx=10, pady=10, sticky="e")
-database_delete_button = tk.Button(root, text="Delete", command=on_delete_database, bg="red", fg="white", font=("Helvetica", 8, "bold"))
-database_delete_button.grid(row=0, column=1, padx=10, pady=10, sticky="w")
-
-zookeeper_button = tk.Button(root, text="Zookeeper", command=on_create_zookeeper_click, bg="red", fg="white", font=("Helvetica", 12, "bold"))
-zookeeper_button.grid(row=1, column=0, padx=10, pady=10, sticky="e")
-zookeeper_delete_button = tk.Button(root, text="Delete", command=on_delete_zookeeper, bg="red", fg="white", font=("Helvetica", 8, "bold"))
-zookeeper_delete_button.grid(row=1, column=1, padx=10, pady=10, sticky="w")
-
-broker_button = tk.Button(root, text="Broker", command=on_create_broker_click, bg="red", fg="white", font=("Helvetica", 12, "bold"))
-broker_button.grid(row=2, column=0, padx=10, pady=10, sticky="e")
-broker_delete_button = tk.Button(root, text="Delete", command=on_delete_broker, bg="red", fg="white", font=("Helvetica", 8, "bold"))
-broker_delete_button.grid(row=2, column=1, padx=10, pady=10, sticky="w")
-
-load_json_files_button = tk.Button(root, text="Load Orders", command=on_load_json_files_click)
+gui = gui_interface.GUI(start_orchestrator)
+load_json_files_button = tk.Button(gui.root, text="Load Orders", command=on_load_json_files_click)
 load_json_files_button.grid(row=3, column=0, padx=10, pady=10, sticky="e")
-
-output = tk.Text(root, height=10, width=30)
-output.grid(row=4, columnspan=2)
-
-root.mainloop()
+gui.start()
