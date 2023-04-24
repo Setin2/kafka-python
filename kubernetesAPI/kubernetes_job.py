@@ -61,6 +61,70 @@ def create_job(service_name, args=[]):
     # Create the Job
     return batch_v1.create_namespaced_job(namespace=namespace, body=job)
 
+def create_service_and_deployment(service_name, replicas=1, args=[]):
+    """
+    Create a kubernetes service and deployment for a given service
+
+    Args:
+        service_name (str): name of the service that was tagged and pushed to a container repository (like docker hub)
+        replicas (int): number of replicas for the deployment (default 1)
+        args ([str]): list of arguments to give to the service container (if any are needed)
+
+    Returns:
+        Tuple[kubernetes.client.AppsV1Api.V1Deployment, kubernetes.client.CoreV1Api.V1Service]: the kubernetes deployment and service
+    """
+    # Define the YAML for the deployment
+    deployment = client.V1Deployment()
+    deployment.api_version = "apps/v1"
+    deployment.kind = "Deployment"
+    deployment.metadata = client.V1ObjectMeta(name=service_name)
+    deployment.spec = client.V1DeploymentSpec(
+        replicas=replicas,
+        selector=client.V1LabelSelector(match_labels={"app": service_name}),
+        template=client.V1PodTemplateSpec(
+            metadata=client.V1ObjectMeta(labels={"app": service_name}),
+            spec=client.V1PodSpec(
+                containers=[
+                    client.V1Container(
+                        name=service_name,
+                        image=f"{variables.DOCKER_HUB_NAME}/{service_name}:latest",
+                        command=["python", f"{service_name}.py"] + args,
+                        ports=[client.V1ContainerPort(name="kafka-python", container_port=9092)],
+                        env=[
+                            client.V1EnvVar(name="KAFKA_BOOTSTRAP_SERVERS", value=variables.KAFKA_BOOTSTRAP_SERVERS),
+                            client.V1EnvVar(name="KAFKA_ZOOKEEPER_CONNECT", value=variables.KAFKA_ZOOKEEPER_CONNECT),
+                            client.V1EnvVar(name="POSTGRES_HOST", value=variables.POSTGRES_HOST),
+                            client.V1EnvVar(name="POSTGRES_NAME", value=variables.POSTGRES_NAME),
+                            client.V1EnvVar(name="POSTGRES_USER", value=variables.POSTGRES_USER),
+                            client.V1EnvVar(name="POSTGRES_PASSWORD", value=variables.POSTGRES_PASSWORD)
+                        ]
+                    )
+                ]
+            )
+        )
+    )
+
+    # Create the deployment
+    deployment = apps_v1.create_namespaced_deployment(namespace=namespace, body=deployment)
+
+    """
+    # Define the YAML for the service
+    service = client.V1Service()
+    service.api_version = "v1"
+    service.kind = "Service"
+    service.metadata = client.V1ObjectMeta(name=service_name)
+    service.spec = client.V1ServiceSpec(
+        selector={"app": service_name},
+        ports=[client.V1ServicePort(port=80, target_port=9092)],
+        type="LoadBalancer"
+    )
+
+    # Create the service
+    service = v1.create_namespaced_service(namespace=namespace, body=service)
+    """
+
+    #return deployment, service
+
 def wait_for_job_completion(service_name):
     """
         Read the events for a service with the given name and wait for a success or failure event.
