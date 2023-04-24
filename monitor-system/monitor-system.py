@@ -78,8 +78,7 @@ while True:
             for tp, messages in new_message.items():
                 for message in messages:
                     key = message.key.decode("utf-8")
-                    message = message.value.decode("utf-8")
-                    key_to_method[key](message)
-                    key_to_method[key](message)
+                    value = message.value.decode("utf-8")
+                    key_to_method[key](value)
     except KafkaError as e:
         print(f'Error: {e}', flush=True)
