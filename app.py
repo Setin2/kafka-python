@@ -11,11 +11,14 @@ from kubernetesAPI import kafka_zookeeper_deploy
 
 orders = []
 
-"""
+
 kubernetes_job.create_service_and_deployment("service1")
 kubernetes_job.create_service_and_deployment("service2")
 kubernetes_job.create_service_and_deployment("service3")
-"""
+
+#print(kubernetes_job.get_deployment_replicas("service1"))
+#kubernetes_job.scale_deployment("service1", 2)
+#print(kubernetes_job.get_deployment_replicas("service1"))
 
 """        
     For each order loaded so far, we start an orchestrator job and send it the order.

@@ -34,7 +34,7 @@ Your system is monitoring the tasks, so at any given time you know:
 2. Number of active tasks/services
 3. You could infer the number of tasks still yet to be performed (you know the active orders, with their services)
 	1. This is extremely important and one of the main reasons to have a queue system, because heavy operations have to be async
-	
+
 ### Heuristics 1o1
 1. If a service is idle for more than X seconds, it is switched off. When a new task is required to be performed, if the service is switched off, it has to be started.
 	- How would you implement such logic with your current setup?

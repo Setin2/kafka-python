@@ -122,8 +122,25 @@ def create_service_and_deployment(service_name, replicas=1, args=[]):
     # Create the service
     service = v1.create_namespaced_service(namespace=namespace, body=service)
     """
-
     #return deployment, service
+
+def scale_deployment(deployment_name, replicas):
+    api = client.AppsV1Api()
+    try:
+        deployment = api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+        deployment.spec.replicas = replicas
+        api.patch_namespaced_deployment(name=deployment_name, namespace=namespace, body=deployment)
+        print(f"Deployment {deployment_name} scaled to {replicas} replicas")
+    except ApiException as e:
+        print(f"Exception when calling AppsV1Api->patch_namespaced_deployment: {e}\n")
+
+def get_deployment_replicas(deployment_name):
+    api = client.AppsV1Api()
+    try:
+        deployment = api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+        return deployment.spec.replicas
+    except ApiException as e:
+        print(f"Exception when calling AppsV1Api->read_namespaced_deployment: {e}\n")
 
 def wait_for_job_completion(service_name):
     """
