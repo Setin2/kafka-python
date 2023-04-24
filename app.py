@@ -26,12 +26,17 @@ def start_orchestrator():
         time.sleep(5)
 
         # extract the order details and send them to the orchestrator job
-        required_tasks = str(order["required_tasks"])
-        orchestrator_job = kubernetes_job.create_job("orchestrator", [orderID, required_tasks])
+        orchestrator_input = f"""{{
+            "input": {5},
+            "orderID": {orderID},
+            "required_tasks": {json.dumps(order['required_tasks'])},
+            "done": {json.dumps(order['completed_tasks'])}
+        }}"""
+        orchestrator_job = kubernetes_job.create_job("orchestrator", [orderID, str(orchestrator_input)])
 
         # wait for the orchestrator to either finish successfully or fail in a separate thread
         # start a new thread to monitor the orchestrator job
-        thread = threading.Thread(target=kubernetes_job.wait_for_job_completion, args=("orchestrator-" + orderID,))
+        thread = threading.Thread(target=kubernetes_job.wait_for_job_completion, args=("orchestrator-" + order["orderID"],))
         thread.start()
 
         # store the thread object in a list to join them later
