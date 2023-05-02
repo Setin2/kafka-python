@@ -6,12 +6,11 @@ from kubernetesAPI import kafka_broker_deploy
 from kubernetesAPI import kafka_zookeeper_deploy
 
 class GUI:
-    def __init__(self, start_function, title="GUI Example"):
+    def __init__(self, title="GUI Example"):
         # Create the main window
         self.root = tk.Tk()
         self.root.title(title)
         self.orders = []
-        self.start_function = start_function()
 
         self.output = None
         self.create_buttons()

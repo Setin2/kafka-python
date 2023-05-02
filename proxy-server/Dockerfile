@@ -6,16 +6,16 @@ WORKDIR /app
 # layer caching when you repeat `docker build`.
 # COPY source path is relative to the `docker build` directory,
 # which we've set up to be the parent of the application source.
-COPY monitor-system/requirements.txt /app
+COPY proxy-server/requirements.txt /app
 # Use the cache if requirements.txt hasn't changed
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy the rest of the application from this folder
-COPY monitor-system /app
+COPY proxy-server /app
 
 # Copy the files shared by all images from the shared files folder
 COPY shared-files /app
 
-ENTRYPOINT ["python", "monitor-system.py"]
+ENTRYPOINT ["python", "proxy-server.py"]
 CMD []

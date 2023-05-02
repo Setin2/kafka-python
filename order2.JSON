@@ -1,5 +1,6 @@
 {
+    "input": 5,
     "orderID": "2",
     "required_tasks": ["service3", "service2", "service1"],
-    "completed_tasks":[]
+    "done":[]
 }

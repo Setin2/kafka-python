@@ -19,28 +19,16 @@ NUM_UPCOMING_TASKS = 0      # number of tasks still yet to be performed
 NUM_INSTANCES = 0           # sum of all instances of each task
 ACTIVE_ORDERS = {}          # a dictionary of all the orderID and order pairs that have been started
 
-last_message_time = {
-    "service1": None,
-    "service2": None,
-    "service3": None
-}
+last_message_time = {}      # dictionary to keep track of the last time each task was active
+idle_check_threads = {}     # dictionary to keep track of idle check threads for each task
 
-# dictionary to keep track of idle check threads for each task
-idle_check_threads = {}
-
-running_tasks = {
+running_tasks = {           # dictionary to keep track of how many instances of each task are doing some computation
     "service1": 0,
     "service2": 0,
     "service3": 0
 }
 
-task_instances = {
-    "service1": 0,
-    "service2": 0,
-    "service3": 0
-}
-
-task_idle_time = {
+task_instances = {          # dictionary to keep track of how many instances of each task exist
     "service1": 0,
     "service2": 0,
     "service3": 0
@@ -52,7 +40,7 @@ def handle_idle_task(task_name):
     for order in ACTIVE_ORDERS.values():
         if task_name in order:
             return
-    # otherwise, start a thread that checks every X seconds if task is still idle, if after a certain amouunt of time, it is still idle we close it
+    # otherwise, start a thread that checks every X seconds if task is still idle, if after a certain amouunt of time it is still idle, we close it
     stop_flag = threading.Event()  # create a stop flag for the thread
     idle_check_thread = threading.Thread(target=check_idle_time, args=(task_name, stop_flag))
     idle_check_thread.start()
@@ -80,10 +68,10 @@ def update_active_orders(message):
         NUM_ORDERS += 1
         ACTIVE_ORDERS[orderID] = order
         NUM_UPCOMING_TASKS += len(order)
-        # check if any idle check threads need to be stopped
+        # are there any thraeds checking if these tasks are idle
         for task, (thread, stop_flag) in list(idle_check_threads.items()):
             if task in order:
-                # task is no longer needed, set the stop flag and join the thread
+                # there are, set the stop flag and join the thread
                 stop_flag.set()
                 thread.join()
                 del idle_check_threads[task]
@@ -113,12 +101,14 @@ def update_active_tasks(message):
     upcoming_orders_with_given_task = 0
     for order in ACTIVE_ORDERS.values():
         if task in order: upcoming_orders_with_given_task += order.count(task)
-    # if the number of orders per task is bigger than the treshold, send a message to the orchestrator to start a new instance of the task
+    # the number of orders per task is bigger than the treshold
+    # send a message to the orchestrator to start a new instance of the task
     if task_instances[task] > 0 and upcoming_orders_with_given_task / task_instances[task] > TASK_INSTANCE_TRESHOLD:
         #producer.send("SYSTEM", task)
         print(f"start a new instance for this task {upcoming_orders_with_given_task}")
-    # if we have more than 1 instance of this task, and 
-    elif task_instances[task] > 1 and upcoming_orders_with_given_task / task_instances[task] < task_instances[task]:
+    # we have more than 1 instance of this task, and the number of instances per orders is smaller than another threshold
+    # send a message to to stop an instance of the task
+    elif task_instances[task] > 1 and upcoming_orders_with_given_task / TASK_INSTANCE_TRESHOLD < task_instances[task] - 0.5:
         print(f"delete an instance for this task {upcoming_orders_with_given_task}")
     # this task is now idle
     if running_tasks[task] == 0:

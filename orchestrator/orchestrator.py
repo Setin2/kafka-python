@@ -4,48 +4,82 @@ import time
 import json
 import psutil
 import producer
+import datetime
 import resource_consumption
 import kubernetes_job_cluster
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 
-orderID = sys.argv[1]
-arguments = sys.argv[2]
-orchestrator_input = json.loads(arguments)
-required_tasks = orchestrator_input['required_tasks']
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-consumer = KafkaConsumer("orchestrator" + orderID, bootstrap_servers=kafka_bootstrap_servers)
+consumer = KafkaConsumer("orchestrator", bootstrap_servers=kafka_bootstrap_servers)
+monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
 
-# first task input
-task_input = {
-    "input": orchestrator_input['input'],
-    "orderID": orderID,
-    "required_tasks": required_tasks,
-    "done": orchestrator_input['done']
+orders = {}
+
+def start_new_order(message):
+    global monitor_producer
+    global orders
+    # get the order
+    order = json.loads(message)
+    orderID = order["orderID"]
+    orders[orderID] = order
+    required_tasks = order["required_tasks"]
+    task_name = required_tasks[len(order["done"])]
+    print(f"started order {order}", flush=True)
+    # notify the first non-completed task in the order
+    task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
+    task_producer.send("START", json.dumps(order))
+    # notify the system monitor
+    monitor_producer.send("ORDER", orderID + ":" + json.dumps(required_tasks) + ":" + "1")
+
+def change_system(message):
+    global monitor_producer
+    task_name, value = message.split(":")
+    # get the new number of instances for this task
+    num_instances = kubernetes_job.get_deployment_replicas(task_name)
+    new_num_instances = num_instances + int(value)
+    print(f"change in system to {value}", flush=True)
+    # scale the instances depending on the provided value
+    kubernetes_job.scale_deployment("service1", new_num_instances)
+    # notify the system monitor
+    monitor_producer.send("INSTANCE", task_name + ":" + int(value))
+
+def update_order(message):
+    global monitor_producer
+    global orders
+    updated_order = json.loads(message)
+    orderID = updated_order["orderID"]
+    required_tasks = updated_order["required_tasks"]
+    # order is done, delete it from the list and notify the system monitor
+    if len(updated_order["done"]) == len(required_tasks):
+        print("order is done", flush=True)
+        del orders[orderID]
+        monitor_producer.send("ORDER", orderID + ":" + json.dumps(required_tasks) + ":" + "0")
+    # order is not done, notify the next service in line
+    else:
+        task_name = required_tasks[len(updated_order["done"])]
+        print(f"continue with task {task_name}", flush=True)
+        task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
+        task_producer.send("ORDER", json.dumps(updated_order))
+
+key_to_method = {
+    "START": start_new_order,           # we got a new order       
+    "SYSTEM": change_system,            # a change in the system needs to occur
+    "PROGRESS": update_order            # a task started or finished
 }
 
-# start the required tasks in the order specified
-for i, task_name in enumerate(required_tasks):
-    # start the job for the task (the task will notify the monitoring job that a new task has started)
-    task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
-    task_producer.send("START", json.dumps(task_input))
+while True:
+    try:
+        # check to see if we got a new message
+        new_message = consumer.poll(100)
 
-    # listen to the consumer to see if the task is finished
-    task_done = False
-    while not task_done:
-        try:
-            # check to see if we got a new message
-            new_message = consumer.poll(100)
-
-            # if so, we get the message output of the task
-            if new_message:
-                # we need to loop thorugh the partition message
-                for tp, messages in new_message.items():
-                    for message in messages:
-                        task_done = True
-                        task_input = json.loads(message.value.decode("utf-8"))
-                        print("got a message")
-        except KafkaError as e:
-            print(f'Error: {e}', flush=True)
-
-print(task_input)
+        # if so, we get the message output of the task
+        if new_message:
+            # we need to loop thorugh the partition message
+            for tp, messages in new_message.items():
+                for message in messages:
+                    key = message.key.decode("utf-8")
+                    value = message.value.decode("utf-8")
+                    key_to_method[key](value)
+    except KafkaError as e:
+        print(f'Error: {e}', flush=True)

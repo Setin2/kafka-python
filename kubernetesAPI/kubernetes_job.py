@@ -61,7 +61,7 @@ def create_job(service_name, args=[]):
     # Create the Job
     return batch_v1.create_namespaced_job(namespace=namespace, body=job)
 
-def create_service_and_deployment(service_name, replicas=1, args=[]):
+def create_service_and_deployment(service_name, start_service=0, replicas=1, args=[]):
     """
     Create a kubernetes service and deployment for a given service
 
@@ -107,22 +107,24 @@ def create_service_and_deployment(service_name, replicas=1, args=[]):
     # Create the deployment
     deployment = apps_v1.create_namespaced_deployment(namespace=namespace, body=deployment)
 
-    """
-    # Define the YAML for the service
-    service = client.V1Service()
-    service.api_version = "v1"
-    service.kind = "Service"
-    service.metadata = client.V1ObjectMeta(name=service_name)
-    service.spec = client.V1ServiceSpec(
-        selector={"app": service_name},
-        ports=[client.V1ServicePort(port=80, target_port=9092)],
-        type="LoadBalancer"
-    )
+    if start_service == 1:
+        service_type = "LoadBalancer" 
+    elif start_service == 2 : service_type = "NodePort"
 
-    # Create the service
-    service = v1.create_namespaced_service(namespace=namespace, body=service)
-    """
-    #return deployment, service
+    if start_service:
+        # Define the YAML for the service
+        service = client.V1Service()
+        service.api_version = "v1"
+        service.kind = "Service"
+        service.metadata = client.V1ObjectMeta(name=service_name)
+        service.spec = client.V1ServiceSpec(
+            selector={"app": service_name},
+            ports=[client.V1ServicePort(port=80, target_port=9092)],
+            type=service_type
+        )
+
+        # Create the service
+        service = v1.create_namespaced_service(namespace=namespace, body=service)
 
 def scale_deployment(deployment_name, replicas):
     api = client.AppsV1Api()
