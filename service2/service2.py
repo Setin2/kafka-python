@@ -27,6 +27,7 @@ for message in consumer:
 
     # do the computation
     task_input["input"] *= 2
+    time.sleep(2)
 
     task_input["done"].append(TASK_NAME)
     # task ended, notify the monitoring producer, system monitor and the orchestrator

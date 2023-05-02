@@ -55,7 +55,8 @@ def check_idle_time(task, stop_flag):
         if current_time - last_message_time[task] > IDLE_TIME_LIMIT:
             producer.send("SERVICE", task + ":" + "-1")
             stop_flag.set()
-            del idle_check_threads[task]
+            if task in idle_check_threads:
+                del idle_check_threads[task]
             break
         time.sleep(60)  # wait for one minute before checking again
 
@@ -63,13 +64,13 @@ def update_active_orders(message):
     global NUM_ORDERS
     global ACTIVE_ORDERS
     global NUM_UPCOMING_TASKS
-    print(f"got message {message}", flush=True)
     orderID, order, value = message.split(":")
     order, value = json.loads(order), int(value)
     # order just started, add it to list of orders
     if value == 1:
         NUM_ORDERS += 1
         ACTIVE_ORDERS[orderID] = order
+        print(f"Changed list of active orders {ACTIVE_ORDERS}")
         NUM_UPCOMING_TASKS += len(order)
         # are there any thraeds checking if these tasks are idle
         for task, (thread, stop_flag) in list(idle_check_threads.items()):
@@ -77,18 +78,19 @@ def update_active_orders(message):
                 # there are, set the stop flag and join the thread
                 stop_flag.set()
                 #thread.join()
-                del idle_check_threads[task]
+                if task in idle_check_threads:
+                    del idle_check_threads[task]
     # order is done, remove it from list of orders
     else:
         NUM_ORDERS -= 1
-        del ACTIVE_ORDERS[orderID]
+        if orderID in ACTIVE_ORDERS:
+            del ACTIVE_ORDERS[orderID]
 
 def update_active_tasks(message):
     global NUM_TASKS
     global TASK_INSTANCE_TRESHOLD
     global ACTIVE_ORDERS
     global NUM_UPCOMING_TASKS
-    print(f"got message {message}", flush=True)
     orderID, task, value = message.split(":")
     value = int(value)
     # we started a new task
@@ -99,26 +101,28 @@ def update_active_tasks(message):
         NUM_UPCOMING_TASKS -= value
         last_message_time[task] = time.time()
     NUM_TASKS += value
-    running_tasks[task] += value
+    if task in running_tasks:
+        running_tasks[task] += value
     # check how many started orders require the task to be completed
     upcoming_orders_with_given_task = 0
     for order in ACTIVE_ORDERS.values():
+        print(order, flush=True)
         if task in order: upcoming_orders_with_given_task += order.count(task)
+    print(f"Active orders for this task is: {upcoming_orders_with_given_task}", flush=True)
     # the number of orders per task is bigger than the treshold
     # send a message to the orchestrator to start a new instance of the task
-    if task_instances[task] > 0 and upcoming_orders_with_given_task / task_instances[task] > TASK_INSTANCE_TRESHOLD:
+    if task in task_instances and task_instances[task] > 0 and upcoming_orders_with_given_task / task_instances[task] > TASK_INSTANCE_TRESHOLD:
         producer.send("SERVICE", task + ":" + "1")
     # we have more than 1 instance of this task, and the number of instances per orders is smaller than another threshold
     # send a message to to stop an instance of the task
-    elif task_instances[task] > 1 and upcoming_orders_with_given_task / TASK_INSTANCE_TRESHOLD < task_instances[task] - 0.5:
+    elif task in task_instances and task_instances[task] > 1 and upcoming_orders_with_given_task / TASK_INSTANCE_TRESHOLD < task_instances[task] - 0.5:
         producer.send("SERVICE", task + ":" + "-1")
     # this task is now idle
-    if running_tasks[task] == 0:
+    if task not in running_tasks or running_tasks[task] == 0:
         handle_idle_task(task)
 
 def update_active_instances(message):
     global NUM_INSTANCES
-    print(f"got message {message}", flush=True)
     task, value = message.split(":")
     value = int(value)
     NUM_INSTANCES += value

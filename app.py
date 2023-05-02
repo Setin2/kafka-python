@@ -21,7 +21,7 @@ kubernetes_job.create_service_and_deployment("service2")
 kubernetes_job.create_service_and_deployment("service3")
 """
 
-#kubernetes_job.create_service_and_deployment("monitor-system")
+kubernetes_job.create_service_and_deployment("monitor-system")
 #kubernetes_job.create_service_and_deployment("orchestrator")
 
 #print(kubernetes_job.get_deployment_replicas("service1"))
