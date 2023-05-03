@@ -9,6 +9,7 @@ from kubernetesAPI import database_deploy
 from kubernetesAPI import kafka_broker_deploy
 from kubernetesAPI import kafka_zookeeper_deploy
 import requests
+import random
 
 url = "http://localhost:30820"  # replace {node_ip} with the IP address of any node in the cluster
 data = {"key": "value"}  # replace with your data
@@ -21,10 +22,10 @@ kubernetes_job.create_service_and_deployment("service2")
 kubernetes_job.create_service_and_deployment("service3")
 """
 
-kubernetes_job.create_service_and_deployment("monitor-system")
+#kubernetes_job.create_service_and_deployment("monitor-system")
 #kubernetes_job.create_service_and_deployment("orchestrator")
 
-#print(kubernetes_job.get_deployment_replicas("service1"))
+#print(kubernetes_job.get_deployment_replicas("service3"))
 #kubernetes_job.scale_deployment("service1", 2)
 #print(kubernetes_job.get_deployment_replicas("service1"))
 
@@ -43,6 +44,7 @@ def on_load_json_files_click():
         for file_path in file_paths:
             with open(file_path, "r") as file:
                 order = json.load(file)
+                order["orderID"] = random.randint(0, 400)
                 response = requests.post(url, json=order)
                 print(response.text)
     else:

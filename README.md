@@ -17,7 +17,7 @@ To be added later (the orchestrator doesnt do much rn)
 
 ### Permision
 
-In order to start new jobs/pods from inside the kubernetes cluster, we must give permission to the orchestartor script. First, a serviceaccount must be created using ``` kubectl create serviceaccount orchestrator ```, and then, the role and rolebinding files from ``` ./kubernetesAPI/ ``` must be applied to the kubernetes cluster using ``` kubectl apply -f kubernetesAPI/role. yaml ```.
+In order to start new jobs/pods from inside the kubernetes cluster, we must give permission to the orchestartor script. First, a serviceaccount must be created using ``` kubectl create serviceaccount orchestrator ```, and then, the role and rolebinding files from ``` ./kubernetesAPI/ ``` must be applied to the kubernetes cluster using ``` kubectl apply -f kubernetesAPI/role.yaml ```.
 
 ## Broker, Zookeeper & Database
 

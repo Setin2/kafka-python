@@ -84,6 +84,7 @@ def create_service_and_deployment(service_name, start_service=0, replicas=1, arg
         template=client.V1PodTemplateSpec(
             metadata=client.V1ObjectMeta(labels={"app": service_name}),
             spec=client.V1PodSpec(
+                service_account_name=variables.SERVICE_ACCOUNT_NAME,
                 containers=[
                     client.V1Container(
                         name=service_name,

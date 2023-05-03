@@ -11,6 +11,10 @@ consumer = KafkaConsumer(TASK_NAME, bootstrap_servers=kafka_bootstrap_servers)
 monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
 orchestrator_producer = producer.Producer("orchestrator", kafka_bootstrap_servers)
 
+def do_computation(input):
+    input *= 2
+    time.sleep(2)
+
 # listen to the orchestrators to know if the task needs to be applied to something
 for message in consumer:
     # we got a message from the orchestrator
@@ -25,18 +29,18 @@ for message in consumer:
     #monitoring_producer.send("ORDER", str(required_tasks) + ":" + TASK_NAME + ":" + str(pid) + ":" + orderID)
     monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "1")
 
-    # do the computation
-    task_input["input"] *= 2
-    time.sleep(2)
+    do_computation(task_input["input"])
 
     task_input["done"].append(TASK_NAME)
     # task ended, notify the monitoring producer, system monitor and the orchestrator
     orchestrator_producer.send("PROGRESS", json.dumps(task_input))
     #monitoring_producer.send("HALT", "HALT")
-    monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "-1")
 
     # order finished, notify the monitoring producer
-    #if TASK_NAME in required_tasks[len(required_tasks) - 1]:
+    if TASK_NAME in required_tasks[len(required_tasks) - 1]:
+        monitor_producer.send("ORDER", orderID + ":" + json.dumps(required_tasks) + ":" + "0")
     #    monitoring_producer.send("STOP", "STOP")
+
+    monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "-1")
 
     time.sleep(1)

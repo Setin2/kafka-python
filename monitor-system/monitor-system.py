@@ -10,7 +10,7 @@ from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-producer = producer.Producer("orchestrator1", kafka_bootstrap_servers)
+producer = producer.Producer("orchestrator", kafka_bootstrap_servers)
 consumer = KafkaConsumer("system", bootstrap_servers=kafka_bootstrap_servers)
 
 IDLE_TIME_LIMIT = 3600      # how many seconds can a service stay idle for (one hour for now)
@@ -31,9 +31,9 @@ running_tasks = {           # dictionary to keep track of how many instances of 
 }
 
 task_instances = {          # dictionary to keep track of how many instances of each task exist
-    "service1": 0,
-    "service2": 0,
-    "service3": 0
+    "service1": 1,
+    "service2": 1,
+    "service3": 1
 }
 
 def handle_idle_task(task_name):
@@ -70,7 +70,7 @@ def update_active_orders(message):
     if value == 1:
         NUM_ORDERS += 1
         ACTIVE_ORDERS[orderID] = order
-        print(f"Changed list of active orders {ACTIVE_ORDERS}")
+        #print(f"Changed list of active orders {ACTIVE_ORDERS}")
         NUM_UPCOMING_TASKS += len(order)
         # are there any thraeds checking if these tasks are idle
         for task, (thread, stop_flag) in list(idle_check_threads.items()):
@@ -106,16 +106,17 @@ def update_active_tasks(message):
     # check how many started orders require the task to be completed
     upcoming_orders_with_given_task = 0
     for order in ACTIVE_ORDERS.values():
-        print(order, flush=True)
         if task in order: upcoming_orders_with_given_task += order.count(task)
     print(f"Active orders for this task is: {upcoming_orders_with_given_task}", flush=True)
-    # the number of orders per task is bigger than the treshold
+    # the number of orders per task is bigger than the treshold (add 1 to avoid division by zero)
     # send a message to the orchestrator to start a new instance of the task
-    if task in task_instances and task_instances[task] > 0 and upcoming_orders_with_given_task / task_instances[task] > TASK_INSTANCE_TRESHOLD:
+    if task in task_instances and task_instances[task] > 0 and (upcoming_orders_with_given_task+1)/(task_instances[task]+1) > TASK_INSTANCE_TRESHOLD:
+        print("new instance", flush=True)
         producer.send("SERVICE", task + ":" + "1")
     # we have more than 1 instance of this task, and the number of instances per orders is smaller than another threshold
     # send a message to to stop an instance of the task
-    elif task in task_instances and task_instances[task] > 1 and upcoming_orders_with_given_task / TASK_INSTANCE_TRESHOLD < task_instances[task] - 0.5:
+    elif task in task_instances and task_instances[task] > 1 and upcoming_orders_with_given_task / task_instances[task] < TASK_INSTANCE_TRESHOLD - 0.5:
+        print("less instance", flush=True)
         producer.send("SERVICE", task + ":" + "-1")
     # this task is now idle
     if task not in running_tasks or running_tasks[task] == 0:

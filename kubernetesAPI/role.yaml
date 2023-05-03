@@ -3,9 +3,9 @@ kind: Role
 metadata:
   name: jobs-watcher
 rules:
-- apiGroups: ["batch"]
-  resources: ["jobs"]
-  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "update", "patch"]
 
 ---
 
