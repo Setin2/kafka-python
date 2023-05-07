@@ -5,6 +5,7 @@ import time
 import psutil
 import producer
 import datetime
+import database
 from kafka import KafkaProducer
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
@@ -56,12 +57,6 @@ def send_metrics(message):
     # task is done, wait for next task
     if "HALT" in message_type:
         return
-    # order is finished, notify the monitor-consumer
-    if "STOP" in message_type:
-        producer.send("STOP", "STOP")
-    # monitor-consumer has closed down, we stop this script as well
-    elif "TERMINATE" in message_type:
-        stop_monitoring = True
     # a task is running, get its resource consumption and send it to the monitor-consumer
     else:
         required_tasks, task, task_pid, orderID = message.value.decode("utf-8").split(":")
@@ -69,14 +64,33 @@ def send_metrics(message):
         cpu_usage = get_cpu_usage(task_pid)
         mem_usage = get_memory_usage(task_pid)
         disk_usage = get_disk_usage(task_pid)
-        producer.send(required_tasks + ":" + orderID + ":" + task + ":CPU", str(cpu_usage))
-        producer.send(required_tasks + ":" + orderID + ":" +  task + ":RAM", str(mem_usage))
-        producer.send(required_tasks + ":" + orderID + ":" +  task + ":DISK", str(disk_usage))
+        data_base.insert_metric(orderID, task, "CPU", cpu_usage)
+        data_base.insert_metric(orderID, task, "RAM", mem_usage)
+        data_base.insert_metric(orderID, task, "DISK", disk_usage)
+        print("Insert: " + str(orderID) + task + "CPU" + str(cpu_usage), flush=True)
+
+def get_expected_usage(data_base, tasks, task, resource, task_runtime):
+    # get the expected usage given our model
+    # first we have to translate all the tasks/resources names to IDs
+    taskID = data_base.get_ID_from_name(0, task)
+    resourceID = data_base.get_ID_from_name(1, resource)
+    for i, task in enumerate(tasks):
+        tasks[i] = data_base.get_ID_from_name(0, task)
+    inputs = tasks + [taskID] + [resourceID] + [task_runtime]
+
+    #inputs = torch.tensor(inputs, dtype=torch.float32)
+    #prediction = model(inputs).data
+    #prediction = np.asarray(prediction)[0]
+    #return prediction
+
+host, port = os.getenv("POSTGRES_HOST").split(":")
+dbname = os.getenv("POSTGRES_NAME")
+user = os.getenv("POSTGRES_USER")
+password = os.getenv("POSTGRES_PASSWORD")
+data_base = database.Database(host, port, dbname, user, password)
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-orderID = sys.argv[1]
-producer = producer.Producer("resource" + orderID, kafka_bootstrap_servers)
-consumer = KafkaConsumer("task" + orderID, bootstrap_servers=kafka_bootstrap_servers)
+consumer = KafkaConsumer("resource", bootstrap_servers=kafka_bootstrap_servers)
 
 # the message from the current job we are monitoring
 current_message = None

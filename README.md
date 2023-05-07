@@ -61,3 +61,10 @@ Besides messages containing the resource usage of some task, the monitoring cons
 The file ``` database.py ``` contains a class for establishing a connection to the postgreSQL server, and various functions for writing/reading data to/from the database. The database table has the following format: ``` (orderID, taskID, resourceID, value, timestamp) ```
 The database also includes 2 lookup tables for the service/resource ID-name pairs: ``` (ID, name) ```
 We need to save the task & resource as numerical values in the main table because we need to feed them into a neural net.
+
+
+kubectl exec -it kafka-broker-74d8cb676-nd82h -- kafka-topics --bootstrap-server kafka-broker:9092 --describe --topic service1
+
+kubectl exec -it kafka-broker-74d8cb676-nd82h -- kafka-topics --bootstrap-server kafka-broker:9092 --alter --topic service1 --partitions 4
+
+kubectl exec -it kafka-broker-74d8cb676-nd82h -- kafka-console-consumer --bootstrap-server kafka-broker:9092 --topic service1 --from-beginning --property print.partition=true

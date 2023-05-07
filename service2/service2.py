@@ -8,12 +8,13 @@ from kafka import KafkaConsumer
 TASK_NAME = "service2"
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 consumer = KafkaConsumer(TASK_NAME, bootstrap_servers=kafka_bootstrap_servers)
-monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
+system_monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
+resource_monitor_producer = producer.Producer("resource", kafka_bootstrap_servers)
 orchestrator_producer = producer.Producer("orchestrator", kafka_bootstrap_servers)
 
 def do_computation(input):
     input *= 2
-    time.sleep(2)
+    time.sleep(3)
 
 # listen to the orchestrators to know if the task needs to be applied to something
 for message in consumer:
@@ -23,24 +24,21 @@ for message in consumer:
     orderID = str(task_input["orderID"])
     pid = os.getpid()
 
-    #monitoring_producer = producer.Producer("task" + orderID, kafka_bootstrap_servers)
-
-    # task start, notify the monitoring producer and system monitor
-    #monitoring_producer.send("ORDER", str(required_tasks) + ":" + TASK_NAME + ":" + str(pid) + ":" + orderID)
-    monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "1")
+    # task start, notify the monitoring services
+    resource_monitor_producer.send("ORDER", str(required_tasks) + ":" + TASK_NAME + ":" + str(pid) + ":" + orderID)
+    system_monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "1")
 
     do_computation(task_input["input"])
 
+    # task ended, notify the monitoring services and the orchestrator
     task_input["done"].append(TASK_NAME)
-    # task ended, notify the monitoring producer, system monitor and the orchestrator
     orchestrator_producer.send("PROGRESS", json.dumps(task_input))
-    #monitoring_producer.send("HALT", "HALT")
+    resource_monitor_producer.send("HALT", "HALT")
 
-    # order finished, notify the monitoring producer
+    # order finished, notify the monitoring service
     if TASK_NAME in required_tasks[len(required_tasks) - 1]:
-        monitor_producer.send("ORDER", orderID + ":" + json.dumps(required_tasks) + ":" + "0")
-    #    monitoring_producer.send("STOP", "STOP")
+        system_monitor_producer.send("ORDER", orderID + ":" + json.dumps(required_tasks) + ":" + "0")
 
-    monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "-1")
+    system_monitor_producer.send("TASK", orderID + ":" + TASK_NAME + ":" + "-1")
 
     time.sleep(1)

@@ -16,20 +16,19 @@ data = {"key": "value"}  # replace with your data
 
 orders = []
 
-"""
-kubernetes_job.create_service_and_deployment("service1")
-kubernetes_job.create_service_and_deployment("service2")
-kubernetes_job.create_service_and_deployment("service3")
-"""
+#kubernetes_job.create_service_and_deployment("proxy-server", start_service=2)
 
 #kubernetes_job.create_service_and_deployment("monitor-system")
+#kubernetes_job.create_service_and_deployment("monitor-resources")
 #kubernetes_job.create_service_and_deployment("orchestrator")
 
-#print(kubernetes_job.get_deployment_replicas("service3"))
-#kubernetes_job.scale_deployment("service1", 2)
-#print(kubernetes_job.get_deployment_replicas("service1"))
+#kubernetes_job.create_service_and_deployment("service1", replicas=4)
 
-#kubernetes_job.create_service_and_deployment("proxy-server", start_service=2)
+
+#kubernetes_job.create_service_and_deployment("service1")
+#kubernetes_job.create_service_and_deployment("service2")
+#kubernetes_job.create_service_and_deployment("service3")
+
 
 def on_load_json_files_click():
     """        

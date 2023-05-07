@@ -9,10 +9,16 @@ import resource_consumption
 import kubernetes_job_cluster
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
+from kafka.admin import KafkaAdminClient, NewPartitions
+from kafka import KafkaAdminClient, KafkaConsumer
+from kafka import TopicPartition
 
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 consumer = KafkaConsumer("orchestrator", bootstrap_servers=kafka_bootstrap_servers)
 monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
+
+#admin_client = KafkaAdminClient(bootstrap_servers=kafka_bootstrap_servers)
+#admin_client.create_partitions({"service1": NewPartitions(4)})
 
 orders = {}
 
@@ -30,7 +36,7 @@ def start_new_order(message):
     monitor_producer.send("ORDER", str(orderID) + ":" + json.dumps(required_tasks) + ":" + "1")
     # notify the first non-completed task in the order
     task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
-    task_producer.send("START", json.dumps(order))
+    task_producer.send(str(orderID), json.dumps(order))
 
 def change_system(message):
     global monitor_producer
@@ -40,7 +46,7 @@ def change_system(message):
     new_num_instances = num_instances + int(value)
     # scale the instances depending on the provided value
     kubernetes_job_cluster.scale_deployment("service1", new_num_instances)
-    print(f"Change in system. New number of replicas for {task_name} is {value}", flush=True)
+    #print(f"Change in system. New number of replicas for {task_name} is {new_num_instances}", flush=True)
     # notify the system monitor
     monitor_producer.send("INSTANCE", task_name + ":" + str(value))
 
@@ -60,7 +66,7 @@ def update_order(message):
     # order is not done, notify the next service in line and the monitor producer
     else:
         task_name = required_tasks[len(updated_order["done"])]
-        print(f"Order with ID {orderID} continues with task {task_name}", flush=True)
+        #print(f"Order with ID {orderID} continues with task {task_name}", flush=True)
         task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
         task_producer.send("TASK", json.dumps(updated_order))
 

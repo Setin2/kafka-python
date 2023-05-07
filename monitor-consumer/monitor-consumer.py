@@ -145,31 +145,20 @@ password = os.getenv("POSTGRES_PASSWORD")
 kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 
 orderID = sys.argv[1]
-producer = producer.Producer("task" + orderID, kafka_bootstrap_servers)
-consumer = KafkaConsumer("resource" + orderID, bootstrap_servers=kafka_bootstrap_servers)
+producer = producer.Producer("task", kafka_bootstrap_servers)
+consumer = KafkaConsumer("resource", bootstrap_servers=kafka_bootstrap_servers)
 data_base = database.Database(host, port, dbname, user, password)
 curr_task = ""
 task_runtime = 0
 #model = load_model()
 for message in consumer:
     # read the message from the kafka producer
-    # tasks is a string representation of a list, so we will need to turn it into a list before using it
     value = message.value.decode("utf-8")
-    # we got a termination notification
-    if "STOP" in value:
-        producer.send("TERMINATE", "TERMINATE")
-        break
     tasks, orderID, task, resource = message.key.decode("utf-8").split(":")
-    # check to see if we are monitoring a new task (we need to keep track of how long we run tasks for)
-    if task is not curr_task:
-        curr_task = task
-        task_runtime = 0
-    else: task_runtime += 1
-    tasks = eval(tasks)
-
+    
     data_base.insert_metric(orderID, task, resource, value)
 
-    get_expected_usage(data_base, tasks, task, resource, task_runtime)
+    get_expected_usage(data_base, eval(tasks), task, resource, 0)
 
     # visualize the actual and the predicted resource usage for this task-resource pair
     #plot_real.update(resource, float(value))
