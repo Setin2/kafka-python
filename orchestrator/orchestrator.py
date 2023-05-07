@@ -17,9 +17,6 @@ kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 consumer = KafkaConsumer("orchestrator", bootstrap_servers=kafka_bootstrap_servers)
 monitor_producer = producer.Producer("system", kafka_bootstrap_servers)
 
-#admin_client = KafkaAdminClient(bootstrap_servers=kafka_bootstrap_servers)
-#admin_client.create_partitions({"service1": NewPartitions(4)})
-
 orders = {}
 
 def start_new_order(message):
@@ -32,7 +29,7 @@ def start_new_order(message):
     required_tasks = order["required_tasks"]
     task_name = required_tasks[len(order["done"])]
     print(f"Starting order with ID {orderID}", flush=True)
-    # notify the system monitor that a new order and the first task have started
+    # notify the system monitor that a new order
     monitor_producer.send("ORDER", str(orderID) + ":" + json.dumps(required_tasks) + ":" + "1")
     # notify the first non-completed task in the order
     task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
@@ -46,7 +43,7 @@ def change_system(message):
     new_num_instances = num_instances + int(value)
     # scale the instances depending on the provided value
     kubernetes_job_cluster.scale_deployment("service1", new_num_instances)
-    #print(f"Change in system. New number of replicas for {task_name} is {new_num_instances}", flush=True)
+    print(f"Change in system. New number of replicas for {task_name} is {new_num_instances}", flush=True)
     # notify the system monitor
     monitor_producer.send("INSTANCE", task_name + ":" + str(value))
 
@@ -58,7 +55,7 @@ def update_order(message):
     required_tasks = updated_order["required_tasks"]
 
     task_done = updated_order["done"][len(updated_order["done"]) - 1]
-    # order is done, delete it from the list and notify the system monitor
+    # order is done, delete it from the list
     if len(updated_order["done"]) == len(required_tasks):
         print(f"Order with ID {orderID} is done", flush=True)
         if orderID in orders:
@@ -68,7 +65,7 @@ def update_order(message):
         task_name = required_tasks[len(updated_order["done"])]
         #print(f"Order with ID {orderID} continues with task {task_name}", flush=True)
         task_producer = producer.Producer(task_name, kafka_bootstrap_servers)
-        task_producer.send("TASK", json.dumps(updated_order))
+        task_producer.send(str(orderID), json.dumps(updated_order))
 
 key_to_method = {
     "START": start_new_order,           # we got a new order       

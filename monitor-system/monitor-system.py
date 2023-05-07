@@ -112,12 +112,12 @@ def update_active_tasks(message):
     # send a message to the orchestrator to start a new instance of the task
     if task in task_instances and task_instances[task] > 0 and (upcoming_orders_with_given_task+1)/(task_instances[task]+1) > TASK_INSTANCE_TRESHOLD:
         print("new instance", flush=True)
-        #producer.send("SERVICE", task + ":" + "1")
+        producer.send("SERVICE", task + ":" + "1")
     # we have more than 1 instance of this task, and the number of instances per orders is smaller than another threshold
     # send a message to to stop an instance of the task
     elif task in task_instances and task_instances[task] > 1 and upcoming_orders_with_given_task / task_instances[task] < TASK_INSTANCE_TRESHOLD - 0.5:
         print("less instance", flush=True)
-        #producer.send("SERVICE", task + ":" + "-1")
+        producer.send("SERVICE", task + ":" + "-1")
     # this task is now idle
     if task not in running_tasks or running_tasks[task] == 0:
         handle_idle_task(task)
