@@ -76,7 +76,6 @@ def create_broker(start_deployment=True, start_service=True):
 
     if start_service:
         # define and start a kafka broker service
-        # this is a LoadBalancer service since we need to communicate with it externally
         broker_service = client.V1Service(
             metadata=client.V1ObjectMeta(name=variables.BROKER_NAME),
             spec=client.V1ServiceSpec(

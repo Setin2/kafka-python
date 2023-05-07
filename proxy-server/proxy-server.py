@@ -12,7 +12,6 @@ def handle_request():
     data = request.get_json()
     print(data)
     start_producer.send("START", json.dumps(data))
-    # Process the data
     return "OK"
 
 if __name__ == '__main__':

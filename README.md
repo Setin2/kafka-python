@@ -37,7 +37,7 @@ The ``` monitor-system ``` service listens on a kafka topic called ``` system ``
 ### Simple Heuristics
 
 The system monitor is responsible for 2 very simple heuristics:
-1. If the number of orders that require some task is bigger/smaller than some treshold, it will notify the orchestrator that the deployment for that service must be scaled up/down. Note however that the number of replicas for a services will depend on the number of partitions for its topic. If we have 5 consumers listening to messages from the orchestrator, but only 4 partitions, only 4 of the 5 replicas will actualy read the messages and do the computation. Changing the number of partitions for a topic is done as instructed in section "Kafka Configurations".
+1. If the number of orders that require some task is bigger/smaller than some treshold, it will notify the orchestrator that the deployment for that service must be scaled up/down. Note however that the number of replicas for a services will depend on the number of partitions for its topic. If we have 5 consumers listening to messages from the orchestrator, but only 4 partitions, only 4 of the 5 replicas will actualy read the messages and do the computation. Changing the number of partitions for a topic is done as instructed in section "Kafka Configurations" and unfortunately done manually for now.
 2. If the number of orders that require some task is 0, the service will start a thread with a timer. If the service has been idle for more than X amount of seconds, the last replica of that deployment will also be shut down in order to save resources. Similarly, if we get a new order that requires the task, the thread will be stopped.
 
 ## Tasks

@@ -55,7 +55,6 @@ while True:
             # we need to loop thorugh the partition message
             for tp, messages in new_message.items():
                 for message in messages:
-                    print("GOT MESSAGE", flush=True)
                     process_message(message)
     except KafkaError as e:
         print(f'Error: {e}', flush=True)
