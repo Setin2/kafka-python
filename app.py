@@ -9,11 +9,10 @@ from tkinter import filedialog
 from kubernetesAPI import kubernetes_job
 from kubernetesAPI import database_deploy
 from kubernetesAPI import kafka_broker_deploy
+from requests.exceptions import ConnectionError
 from kubernetesAPI import kafka_zookeeper_deploy
 
-url = "http://localhost:30820"  # replace {node_ip} with the IP address of any node in the cluster
-data = {"key": "value"}  # replace with your data
-
+url = "http://localhost:30820"
 orders = []
 
 # first create the databse and the zookeeper
@@ -57,10 +56,23 @@ def on_load_json_files_click():
     else:
         print("No files selected.")
 
-def startGUI():
+def startWithGUI():
     gui = gui_interface.GUI()
     load_json_files_button = tk.Button(gui.root, text="Load Orders", command=on_load_json_files_click)
     load_json_files_button.grid(row=3, column=0, padx=10, pady=10, sticky="e")
     gui.start()
 
-startGUI()
+def startWithoutGUI():
+    while True:
+        orders = input("Write the name of the order(s) you wish to start, separated by a space:")
+        for order in orders.strip().split(" "):
+            try:
+                with open(order + ".JSON", "r") as file:
+                    order = json.load(file)
+                    response = requests.post(url, json=order)
+                    print(response.text)
+            except FileNotFoundError: print(f"Order {order} does not exist.\n")
+            except ConnectionError: print("ConnectionError. The proxy-server is likely not running.\n")
+
+#startWithGUI()
+startWithoutGUI()

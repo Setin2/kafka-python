@@ -14,7 +14,7 @@ The files of type ``` order.JSON ``` contain a list of tasks that need to be app
 The ``` app.py ``` script can be used to start all necessary services, load order files, and send them to the ingestion service called ``` proxy-server ```
 
 The ``` proxy-server ``` service uses ``` Flask ``` to listen to HTTP requests, where each request is an order.
-It then sends each order further to the orchestrator service using apacha kafka. The reason for this approach is that we need to send messages using kafka only from within the kubernetes cluster. As the main application works outside of the cluster, we use HTTP requests to send orders.
+It then sends each order further to the orchestrator service using kafka. The reason for this approach is that we need to send messages using kafka only from within the kubernetes cluster. As the main application works outside of the cluster, we use HTTP requests to send orders.
 
 ## Orchestrator
 
@@ -49,7 +49,7 @@ Each task that needs to be applied to an image listens to a topic called after t
 4. (Notify the resource monitor that the task has ended and its resource consumption deosnt need to be monitored anymore)
 5. If this was the last task in the order, notify the system monitor that the order is finished.
 6. Then notify the system monitor that the task is finished as well.
-The last 2 steps need to be performed in that order for the heuristics to work.
+The last 2 steps need to be performed in that order for the heuristics to work correctly.
 
 ## Monitor Resources
 
