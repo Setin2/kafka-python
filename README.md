@@ -66,7 +66,12 @@ The file ``` shared-files/database.py ``` contains a class for establishing a co
 The database also includes 2 lookup tables for the service/resource ID-name pairs: ``` (ID, name) ```
 We need to save the task & resource as numerical values in the main table because we need to feed them into a neural net.
 
+## Forecast Service
+
+The forecast-service is an implementation for a service used to forecast the resource consumption of some other given service. The code was implemented based on an earlier version of the system and isnt fully operational as of now.
+
 ## Kafka Configurations
+
 Here are some usefull comands for debugging kafka and configuring it to work.
 
 The partitions for a certain topic can be checked from inside the broker pod using the command:
